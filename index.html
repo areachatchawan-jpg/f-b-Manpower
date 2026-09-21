@@ -258,6 +258,21 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 }
 </style>
 </style>
+
+<style id="v28-autocomplete-css">
+.v28-ac-wrap{position:relative}
+.v28-ac-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:1400;background:#fff;border:1px solid #cfe0ef;border-radius:15px;box-shadow:0 18px 38px rgba(25,70,115,.16);max-height:340px;overflow:auto;padding:6px}
+.v28-ac-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;background:#fff;padding:11px 12px;border-radius:11px;color:#214f80}
+.v28-ac-item:hover,.v28-ac-item:focus{background:#eef7ff;outline:none}
+.v28-ac-main{min-width:0}.v28-ac-name{font-weight:900;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v28-ac-meta{font-size:10px;color:#71879c;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v28-ac-state{font-size:10px;font-weight:900;white-space:nowrap}.v28-ac-state.ok{color:#1c7951}.v28-ac-state.no{color:#a52d33}
+.v28-ac-empty{padding:12px;color:#7a8ea2;font-size:11px;text-align:center}
+.v28-ac-selected{margin-top:10px;display:flex;flex-wrap:wrap;gap:7px}
+.v28-ac-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #d3e5f3;background:#f5fbff;color:#245b88;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800}
+.v28-ac-chip button{border:0;background:transparent;color:#a52d33;font-weight:900;padding:0 2px;cursor:pointer}
+.v28-ac-hint{font-size:10px;color:#72869b;margin-top:6px}
+</style>
 </head>
 <body>
 <div id="app"></div><div id="toast" class="toast"></div>
@@ -873,6 +888,69 @@ function selectedMovementEmployees(){
    .filter(Boolean);
 }
 
+
+function v28SearchEmployees(term,date,start,end,activeRq,destHotel,destOutlet){
+ const q=String(term||'').trim().toLowerCase();
+ if(!q)return [];
+ const selected=new Set(movementSelectedCodes);
+ const rows=DATA.employees.map((e,i)=>{
+   const hay=[e.name,e.id,e.role,e.hotel,e.outlet,outletName(e.hotel,e.outlet),hotelName(e.hotel)].join(' ').toLowerCase();
+   if(!hay.includes(q))return null;
+   const elig=helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet);
+   return {e,i,elig,already:selected.has(e.id)};
+ }).filter(Boolean);
+ rows.sort((a,b)=>{
+   if(a.already!==b.already)return a.already?-1:1;
+   if(a.elig.ok!==b.elig.ok)return a.elig.ok?-1:1;
+   const qa=a.e.name.toLowerCase(), qb=b.e.name.toLowerCase();
+   const as=qa.startsWith(q), bs=qb.startsWith(q);
+   if(as!==bs)return as?-1:1;
+   return qa.localeCompare(qb,'th');
+ });
+ return rows.slice(0,40);
+}
+function v28RenderSelectedChips(){
+ const root=document.getElementById('m_empSelectedChips'); if(!root)return;
+ const selected=selectedMovementEmployees();
+ root.innerHTML=selected.map(e=>`<span class="v28-ac-chip">${e.name} • ${outletName(e.hotel,e.outlet)}<button type="button" data-action="removeSelectedEmployee" data-code="${e.id}" aria-label="เอาออก">×</button></span>`).join('');
+}
+function v28RenderAutocomplete(){
+ const input=document.getElementById('m_empSearch'), menu=document.getElementById('m_empAutocomplete');
+ if(!input||!menu)return;
+ const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
+ const date=activeRq?.date||document.getElementById('m_date')?.value||todayISO();
+ const start=document.getElementById('m_helpStart')?.value||activeRq?.start||'15:00';
+ const end=document.getElementById('m_helpEnd')?.value||activeRq?.end||'20:00';
+ const destHotel=activeRq?.toHotel||document.getElementById('m_toHotel')?.value;
+ const destOutlet=activeRq?.toOutlet||document.getElementById('m_toOutlet')?.value;
+ if(!input.value.trim()){menu.hidden=true;menu.innerHTML='';return;}
+ const rows=v28SearchEmployees(input.value,date,start,end,activeRq,destHotel,destOutlet);
+ menu.innerHTML=rows.length?rows.map(({e,elig,already,i})=>`<button type="button" class="v28-ac-item" data-action="pickEmployeeAutocomplete" data-index="${i}">
+   <span class="v28-ac-main"><span class="v28-ac-name">${e.name} <span style="font-size:9px;color:#7890a5">(${e.id})</span></span>
+   <span class="v28-ac-meta">${e.role} • ${hotelName(e.hotel)} • ${outletName(e.hotel,e.outlet)} • เวลาหลัก ${e.shiftStart||'07:00'}-${e.shiftEnd||'16:00'}</span></span>
+   <span class="v28-ac-state ${already?'no':elig.ok?'ok':'no'}">${already?'เลือกแล้ว':elig.ok?'พร้อมส่ง':elig.reason}</span>
+ </button>`).join(''):'<div class="v28-ac-empty">ไม่พบชื่อใน Employee Master</div>';
+ menu.hidden=false;
+}
+function v28PickAutocomplete(index){
+ const e=DATA.employees[Number(index)]; if(!e)return;
+ const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
+ const date=activeRq?.date||document.getElementById('m_date')?.value||todayISO();
+ const start=document.getElementById('m_helpStart')?.value||activeRq?.start||'15:00';
+ const end=document.getElementById('m_helpEnd')?.value||activeRq?.end||'20:00';
+ const destHotel=activeRq?.toHotel||document.getElementById('m_toHotel')?.value;
+ const destOutlet=activeRq?.toOutlet||document.getElementById('m_toOutlet')?.value;
+ if(movementSelectedCodes.has(e.id)){toast(`${e.name} ถูกเลือกแล้ว`,'warn');return;}
+ const max=Number(activeRq?.qty||9999);
+ if(selectedMovementEmployees().length>=max){toast(`ครบจำนวนที่ต้องการแล้ว ${max} คน`,'warn');return;}
+ const elig=helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet);
+ if(!elig.ok){toast(`${e.name}: ${elig.reason}`,'warn');return;}
+ movementSelectedCodes.add(e.id);
+ const input=document.getElementById('m_empSearch'); if(input)input.value='';
+ const menu=document.getElementById('m_empAutocomplete'); if(menu){menu.hidden=true;menu.innerHTML='';}
+ renderMovementEmployeePicker();
+}
+
 function renderMovementEmployeePicker(){
  const list=filteredEmployeesForMovement();
  const root=document.getElementById("m_empList");
@@ -885,6 +963,7 @@ function renderMovementEmployeePicker(){
  const destHotel=activeRq?.toHotel||document.getElementById('m_toHotel')?.value, destOutlet=activeRq?.toOutlet||document.getElementById('m_toOutlet')?.value;
  const scope=document.getElementById('m_empScope')?.value||'eligible';
  const selectedWarnings=selected.map(e=>({e,elig:helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet)})).filter(x=>!x.elig.ok);
+ v28RenderSelectedChips();
  const selectedHtml=selected.length
    ? `<div class="v23-selected"><div class="v23-selected-head"><div class="v23-selected-title">พนักงานที่เลือก</div><span class="pill pill-gold">${selected.length}${activeRq?` / ${max}`:""} คน</span></div>${selectedWarnings.length?`<div class="v26-selected-warning">⚠️ ${selectedWarnings.map(x=>`${x.e.name}: ${x.elig.reason}`).join(' • ')}</div>`:''}${[...new Map(selected.map(e=>[`${e.hotel}||${e.outlet}`,e])).keys()].map(key=>{const [h,o]=key.split("||");const people=selected.filter(e=>e.hotel===h&&e.outlet===o);return `<div class="v23-source-group"><div class="v23-source-title">${hotelName(h)} • ${outletName(h,o)} — ${people.length} คน</div>${people.map(e=>{const hs=e.shiftStart||'07:00',he=e.shiftEnd||'16:00';const elig=helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet);return `<div class="v23-person"><span><b>${e.id}</b> — ${e.name}<span class="small"> • ${e.role} • เวลาหลัก ${hs}-${he} • ${elig.ok?'<span class="v26-eligible">พร้อมส่ง</span>':'<span class="v26-ineligible">'+elig.reason+'</span>'}</span></span><button class="btn btn-light" type="button" data-action="removeSelectedEmployee" data-code="${e.id}" style="padding:5px 9px;min-height:34px">เอาออก</button></div>`}).join('')}</div>`}).join('')}</div>`
    : `<div class="v23-selected"><div class="v23-selected-head"><div class="v23-selected-title">พนักงานที่เลือก</div><span class="pill pill-blue">ยังไม่ได้เลือก</span></div><div class="small">ระบบจะแนะนำคนจากทุกห้องอาหารที่ว่างจริงในช่วง ${start}-${end}; คนหยุด/ลา/งานซ้อนจะเลือกไม่ได้</div></div>`;
@@ -959,10 +1038,15 @@ function movementPage(){
  <div style="margin-top:12px">
   <label>เลือกพนักงาน</label>
   <div class="employee-picker">
-    <div class="employee-search-row"><input id="m_empSearch" placeholder="พิมพ์ชื่อ / รหัสพนักงานเพื่อค้นหา"><button class="btn btn-light" type="button" data-action="clearEmployeeSearch">ล้าง</button></div>
+    <div class="v28-ac-wrap">
+      <div class="employee-search-row"><input id="m_empSearch" autocomplete="off" placeholder="พิมพ์อย่างน้อย 1 ตัวอักษร เช่น ส / สม / 305"><button class="btn btn-light" type="button" data-action="clearEmployeeSearch">ล้าง</button></div>
+      <div id="m_empAutocomplete" class="v28-ac-menu" hidden></div>
+    </div>
+    <div id="m_empSelectedChips" class="v28-ac-selected"></div>
+    <div class="v28-ac-hint">รายชื่อมาจาก Employee Master • พิมพ์ชื่อ/รหัสแล้วแตะเพื่อเลือก • เลือกหลายคนได้และค้นหาต่อโดยรายชื่อที่เลือกไม่หาย</div>
     <div id="m_empList" class="employee-list"></div>
-    <div class="manual-employee"><div><label>ชื่อพนักงานกรณียังไม่มีในทะเบียน</label><input id="m_manualName" placeholder="เช่น สมชาย ใจดี"></div><div><label>รหัสพนักงาน (ถ้ามี)</label><input id="m_manualCode" placeholder="เช่น TEMP001"></div></div>
-    <div class="small">พนักงานแต่ละคนใช้โรงแรม/ห้องอาหารต้นสังกัดเป็น “ต้นทางจริง” อัตโนมัติ • ระบบคัดเฉพาะคนที่ไม่หยุด/ไม่ลา/ไม่มีงานซ้อนและไม่ทับเวลางานหลัก • ดึงคนจากชั้น 79, 81, 82 หรือห้องอาหารอื่นมาช่วยแทนได้ • OT คำนวณจากเวลาช่วยจริง</div>
+    <div class="manual-employee"><div><label>ชื่อพนักงานกรณีไม่มีใน Employee Master (ใช้เฉพาะกรณีพิเศษ)</label><input id="m_manualName" placeholder="เช่น สมชาย ใจดี"></div><div><label>รหัสพนักงาน (ถ้ามี)</label><input id="m_manualCode" placeholder="เช่น TEMP001"></div></div>
+    <div class="small">📌 รายชื่อปกติเลือกจาก Employee Master เพื่อให้ระบบรู้ต้นสังกัดจริง • Manual ใช้เฉพาะคนที่ยังไม่มีทะเบียน • พนักงานแต่ละคนใช้โรงแรม/ห้องอาหารต้นสังกัดเป็น “ต้นทางจริง” อัตโนมัติ • ระบบคัดเฉพาะคนที่ไม่หยุด/ไม่ลา/ไม่มีงานซ้อนและไม่ทับเวลางานหลัก • ดึงคนจากชั้น 79, 81, 82 หรือห้องอาหารอื่นมาช่วยแทนได้ • OT คำนวณจากเวลาช่วยจริง</div>
   </div>
  </div>
  <div class="v25-helper-time card" style="margin-top:14px"><div class="section-title" style="margin:0"><div><b>เวลาทำงานจริงระหว่างไปช่วย</b><div class="small">ตัวอย่าง: เวลาหลัก 06:00–15:00 → ช่วยชั้น 81 เวลา 15:00–20:00 = OT 5 ชม.</div></div></div><div class="grid-2" style="margin-top:10px"><div><label>เวลาเริ่มช่วย</label><input id="m_helpStart" type="time" value="${activeRq?.start||'15:00'}"></div><div><label>เวลาเลิกช่วย</label><input id="m_helpEnd" type="time" value="${activeRq?.end||'20:00'}"></div></div></div><button class="btn btn-primary" style="margin-top:14px" data-action="addMovement">บันทึกการจัดคนไปช่วย</button></div>
@@ -1255,6 +1339,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!v21CurrentUser&&doc
 // Initial render uses session if present.
 
 function go(p){page=p;render()}
+document.addEventListener("click",e=>{
+ const wrap=document.querySelector(".v28-ac-wrap");
+ const menu=document.getElementById("m_empAutocomplete");
+ if(wrap&&menu&&!wrap.contains(e.target))menu.hidden=true;
+});
 document.addEventListener("click",async e=>{
  const el=e.target.closest("[data-action]");if(!el)return; const a=el.dataset.action;
  if(a==="hotelStart"){currentHotel=el.dataset.hotel;go("dashboard");toast("เข้าสู่ "+hotelName(currentHotel))}
@@ -1276,7 +1365,8 @@ else if(a==="setEmployeeDayStatus"){const idx=+el.dataset.i,emp=DATA.employees[i
  go("movement");
 }
  
-else if(a==="clearEmployeeSearch"){const x=document.getElementById("m_empSearch");if(x)x.value="";renderMovementEmployeePicker()}
+else if(a==="clearEmployeeSearch"){const x=document.getElementById("m_empSearch");if(x)x.value="";const m=document.getElementById("m_empAutocomplete");if(m){m.hidden=true;m.innerHTML="";}renderMovementEmployeePicker()}
+else if(a==="pickEmployeeAutocomplete"){v28PickAutocomplete(+el.dataset.index)}
 else if(a==="removeSelectedEmployee"){
  const code=el.dataset.code;
  if(code) movementSelectedCodes.delete(code);
@@ -1432,6 +1522,12 @@ else if(a==="copyLine"){try{await navigator.clipboard.writeText($("lineText").va
  else if(a==="addOutlet"){const h=$("a_hotel").value,n=$("a_outlet").value.trim(),f=$("a_floor").value.trim();if(!n)return toast("ใส่ชื่อห้องอาหาร");DATA.hotels[h].outlets.push({id:"u"+Date.now(),name:n,floor:f||"ไม่ระบุ"});toast("เพิ่มสถานที่แล้ว");render()}
 });
 
+document.addEventListener("input",e=>{
+ if(e.target?.id==="m_empSearch")v28RenderAutocomplete();
+});
+document.addEventListener("focusin",e=>{
+ if(e.target?.id==="m_empSearch")v28RenderAutocomplete();
+});
 document.addEventListener("input",e=>{
  if(e.target.id==="m_empSearch")renderMovementEmployeePicker();
  if(["o_start","o_end","o_rate"].includes(e.target.id)){
