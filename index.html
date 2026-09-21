@@ -207,6 +207,19 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 @media(max-width:700px){.compare-metrics{grid-template-columns:1fr 1fr}.hotel-compare-card{padding:13px}.dual-bar-row{grid-template-columns:92px 1fr 52px}.dual-bar-track{height:20px}}
 @media print{.hotel-compare-card,.hotel-compare-table{box-shadow:none}.hotel-compare-logo{background:#fff}}
 @keyframes dualGrow{from{transform:scaleX(.08);opacity:.2}to{transform:scaleX(1);opacity:1}}
+
+<style id="v23-multi-source-css">
+.v23-selected{margin:10px 0;padding:12px;border:1px solid #cfe3f3;border-radius:16px;background:#f7fbff}
+.v23-selected-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.v23-selected-title{font-weight:900;color:#194c82}
+.v23-source-group{border:1px solid #deebf5;border-radius:12px;background:#fff;padding:9px;margin-top:8px}
+.v23-source-title{font-size:11px;font-weight:900;color:#28669c}
+.v23-person{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 0;border-top:1px dashed #e4edf4;font-size:12px}
+.v23-person:first-of-type{border-top:0}
+.v23-request-source{margin-top:8px;padding:9px 11px;border-radius:12px;background:#f6fbff;border:1px dashed #cfe3f3}
+.v23-delete{border-color:#f2c6c6!important;color:#b42318!important;background:#fff7f7!important}
+.v23-delete:active{background:#fee!important}
+</style>
 </style>
 </head>
 <body>
@@ -501,12 +514,12 @@ function dashboard(){
  const h=DATA.hotels[currentHotel],hrs=DATA.ots.reduce((a,x)=>a+x.hours,0),cash=DATA.ots.reduce((a,x)=>a+x.hours*x.rate,0);
  return `${header()}<main class="page"><div class="hero"><div class="eyebrow">F&B OPERATIONS HUB</div><h1>${h.short}</h1><p>F-B MANPOWER • Staff Movement • OT • Reports</p></div>
  <div class="section-title"><div><h2>Quick Actions</h2><div class="small">เลือกงานที่ต้องการดำเนินการ</div></div></div>
- <div class="actions">${action("employees","ทะเบียนพนักงาน","Employee Master","employees")}${action("request","ขอคนช่วย","Request Support","request")}${action("report","📥 Request Center","ส่งคำขอ / รับคำขอ","inbox")}${action("movement","จัดคนไปช่วย",`รอจัด ${DATA.requests.filter(x=>x.status==="accepted").length} คำขอ • คำขอทั้งหมด ${DATA.requests.length}`,"movement")}${action("ot","บันทึก OT","OT Management","ot")}${action("report","รายงาน","Reports & Analytics","reports")}</div>
+ <div class="actions">${action("employees","ทะเบียนพนักงาน","Employee Master","employees")}${action("request","ขอคนช่วย","Request Support","request")}${action("report","📥 Request Center","ส่งคำขอ / รับคำขอ","inbox")}${action("movement","จัดคนไปช่วย",`รอจัด ${activeRequestList().filter(x=>x.status==="accepted").length} คำขอ • คำขอทั้งหมด ${activeRequestList().length}`,"movement")}${action("ot","บันทึก OT","OT Management","ot")}${action("report","รายงาน","Reports & Analytics","reports")}</div>
  <div class="section-title"><div><h2>Admin</h2><div class="small">แก้ไข Master และค่าระบบ</div></div></div><div class="actions">${action("admin","Admin Center","แก้ไขข้อมูล","admin")}${action("movement","🧪 ทดลอง Workflow","สร้างคำขอตัวอย่าง","demoWorkflow")}</div>
  <div class="section-title"><div><h2>สรุป</h2><div class="small">ดูจำนวนคำขอและงานจัดคนของโรงแรมนี้</div></div></div><div class="kpis">
-<div class="kpi"><div class="l">คำขอทั้งหมด</div><div class="v">${DATA.requests.length}</div></div>
-<div class="kpi"><div class="l">รอจัดคน</div><div class="v">${DATA.requests.filter(x=>x.status==="accepted").length}</div></div>
-<div class="kpi"><div class="l">จัดคนแล้ว</div><div class="v">${DATA.requests.filter(x=>x.status==="assigned").length}</div></div>
+<div class="kpi"><div class="l">คำขอทั้งหมด</div><div class="v">${activeRequestList().length}</div></div>
+<div class="kpi"><div class="l">รอจัดคน</div><div class="v">${activeRequestList().filter(x=>x.status==="accepted").length}</div></div>
+<div class="kpi"><div class="l">จัดคนแล้ว</div><div class="v">${activeRequestList().filter(x=>x.status==="assigned").length}</div></div>
 <div class="kpi"><div class="l">Movement</div><div class="v">${DATA.movements.length}</div></div></div>
 <div class="kpis" style="margin-top:14px"><div class="kpi"><div class="l">OT ชั่วโมง</div><div class="v">${hrs.toFixed(2)}</div></div><div class="kpi"><div class="l">ค่า OT</div><div class="v">${money(cash)}</div></div></div>
  </main>`;
@@ -520,8 +533,8 @@ function employees(){
 }
 
 function inboxPage(){
- const sent=DATA.requests.filter(x=>x.toHotel===currentHotel);
- const receive=DATA.requests.filter(x=>x.fromHotel===currentHotel);
+ const sent=activeRequestList().filter(x=>x.toHotel===currentHotel);
+ const receive=activeRequestList().filter(x=>x.fromHotel===currentHotel);
  const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"จัดคนแล้ว":"ปิดงาน";
  const cls=x=>x.status==="pending"?"status-pending":x.status==="accepted"?"status-accepted":x.status==="assigned"?"status-assigned":"status-done";
  const card=(x,mode)=>{
@@ -532,6 +545,11 @@ function inboxPage(){
     <div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span></div>
     <div class="flow"><span class="flow-dot">1</span><span class="flow-label">Request</span><span class="flow-line"></span><span class="flow-dot">2</span><span class="flow-label">Accept</span><span class="flow-line"></span><span class="flow-dot">3</span><span class="flow-label">Assign</span><span class="flow-line"></span><span class="flow-dot">4</span><span class="flow-label">OT / Close</span></div>
     ${canAccept?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:canAssign?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:12px">${mode==="sent"?"คำขอของฉัน":"พนักงานที่จัด: "+((x.assignedCodes||[]).join(", ")||"-")}</div>`}
+    ${requestSourceSummaryHtml(x)}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      ${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">ลบคำขอ</button>`:''}
+      ${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ปิดงาน</button>`:''}
+    </div>
    </div>`;
  };
  return `${header()}<main class="page"><button class="btn btn-light" data-action="nav" data-page="dashboard">← Dashboard</button>
@@ -556,25 +574,106 @@ function requestPage(){
  <div><label>เวลาเริ่ม</label><input id="r_start" type="time" value="09:00"></div><div><label>เวลาจบ</label><input id="r_end" type="time" value="15:00"></div></div>
  <div style="margin-top:12px"><label>เหตุผล / งาน</label><textarea id="r_reason" placeholder="เช่น งานจัดเลี้ยง / Breakfast Support"></textarea></div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addRequest">ส่งคำขอคนช่วย</button></div>
- <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ต้นทาง</th><th>ปลายทาง</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th></tr></thead><tbody>${DATA.requests.map(x=>`<tr><td>${x.date||"-"}</td><td><b>${hotelName(x.fromHotel)}</b><br>${outletName(x.fromHotel,x.fromOutlet)}</td><td><b>${hotelName(x.toHotel)}</b><br>${outletName(x.toHotel,x.toOutlet)}</td><td>${x.role}</td><td>${x.qty}</td><td>${x.start}-${x.end}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
+ <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ต้นทาง</th><th>ปลายทาง</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th><th>สถานะ / ต้นทางจริง</th></tr></thead><tbody>${activeRequestList().map(x=>`<tr><td>${x.date||"-"}</td><td><b>${hotelName(x.fromHotel)}</b><br>${outletName(x.fromHotel,x.fromOutlet)}</td><td><b>${hotelName(x.toHotel)}</b><br>${outletName(x.toHotel,x.toOutlet)}</td><td>${x.role}</td><td>${x.qty}</td><td>${x.start}-${x.end}</td><td>${x.status}<br>${requestSourceBreakdown(x).filter(s=>s.people>0).map(s=>`${outletName(s.hotel,s.outlet)} ${s.people} คน`).join("<br>")||"-"}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
 </main>`;
 }
 
-function renderMovementEmployeePicker(){
+
+let movementSelectedCodes = new Set();
+
+function activeRequestList(){
+ return DATA.requests.filter(x=>x && x.status!=="deleted" && !x.deletedAt);
+}
+function requestAssignedCodes(rq){
+ return Array.isArray(rq?.assignedCodes)?rq.assignedCodes:[];
+}
+function requestMovements(rq){
+ return DATA.movements.filter(x=>x.requestId===rq.id);
+}
+function requestSourceBreakdown(rq){
+ const rows=requestMovements(rq);
+ const map=new Map();
+ rows.forEach(x=>{
+   const key=`${x.fromHotel}||${x.fromOutlet}`;
+   const item=map.get(key)||{hotel:x.fromHotel,outlet:x.fromOutlet,people:0,names:[]};
+   item.people++;
+   item.names.push(x.name||x.code||"-");
+   map.set(key,item);
+ });
+ if(!map.size && rq?.fromHotel){
+   const key=`${rq.fromHotel}||${rq.fromOutlet}`;
+   map.set(key,{hotel:rq.fromHotel,outlet:rq.fromOutlet,people:0,names:[]});
+ }
+ return [...map.values()];
+}
+function requestSourceSummaryHtml(rq){
+ const rows=requestSourceBreakdown(rq);
+ const assigned=rows.some(x=>x.people>0);
+ if(!assigned) return `<div class="v23-request-source"><b>ต้นทางตามคำขอ</b><div class="small">${hotelName(rq.fromHotel)} • ${outletName(rq.fromHotel,rq.fromOutlet)}</div></div>`;
+ return `<div class="v23-request-source"><b>ต้นทางที่จัดจริง • ${rows.length} จุด</b>${
+   rows.map(x=>`<div class="small" style="margin-top:5px">• ${hotelName(x.hotel)} • ${outletName(x.hotel,x.outlet)} — <b>${x.people} คน</b>${x.names.length?` (${x.names.join(", ")})`:``}</div>`).join("")
+ }</div>`;
+}
+function canDeleteRequest(rq){
+ const noAssigned=requestAssignedCodes(rq).length===0 && requestMovements(rq).length===0;
+ const statusOK=rq && ["pending","accepted"].includes(rq.status);
+ const roleOK=['superadmin','admin','manager','supervisor'].includes(v21CurrentUser?.role);
+ const hotelOK=!v21CurrentUser || !currentHotel ? true : (rq.toHotel===currentHotel || rq.fromHotel===currentHotel);
+ return !!(noAssigned && statusOK && roleOK && hotelOK);
+}
+function canCloseRequest(rq){
+ return !!(rq && rq.status==="assigned" && requestAssignedCodes(rq).length>=Number(rq.qty||0) && ['superadmin','admin','manager','supervisor'].includes(v21CurrentUser?.role));
+}
+function filteredEmployeesForMovement(){
  const q=(document.getElementById("m_empSearch")?.value||"").trim().toLowerCase();
- const list=DATA.employees.map((e,i)=>({e,i})).filter(x=>{
-   const hay=(x.e.id+" "+x.e.name+" "+x.e.role+" "+hotelName(x.e.hotel)).toLowerCase();
+ return DATA.employees.map((e,i)=>({e,i})).filter(x=>{
+   const hay=(x.e.id+" "+x.e.name+" "+x.e.role+" "+hotelName(x.e.hotel)+" "+outletName(x.e.hotel,x.e.outlet)).toLowerCase();
    return !q||hay.includes(q);
  });
+}
+function selectedMovementEmployees(){
+ return [...movementSelectedCodes]
+   .map(code=>DATA.employees.find(e=>e.id===code))
+   .filter(Boolean);
+}
+
+function renderMovementEmployeePicker(){
+ const list=filteredEmployeesForMovement();
  const root=document.getElementById("m_empList");
  if(!root)return;
- root.innerHTML=list.map(x=>`<label class="employee-row"><input class="mp" type="checkbox" value="${x.i}"> <div><b>${x.e.id} — ${x.e.name}</b><div class="meta">${x.e.role} • ${hotelName(x.e.hotel)} • ${outletName(x.e.hotel,x.e.outlet)}</div></div></label>`).join("")
-   || `<div class="empty">ไม่พบพนักงานที่ค้นหา</div>`;
+ const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
+ const max=Number(activeRq?.qty||9999);
+ const selected=selectedMovementEmployees();
+ const atLimit=activeRq ? selected.length>=max : false;
+
+ const selectedHtml=selected.length
+   ? `<div class="v23-selected">
+       <div class="v23-selected-head"><div class="v23-selected-title">พนักงานที่เลือก</div><span class="pill pill-gold">${selected.length}${activeRq?` / ${max}`:""} คน</span></div>
+       ${[...new Map(selected.map(e=>[`${e.hotel}||${e.outlet}`,e])).keys()].map(key=>{
+         const [h,o]=key.split("||");
+         const people=selected.filter(e=>e.hotel===h&&e.outlet===o);
+         return `<div class="v23-source-group"><div class="v23-source-title">${hotelName(h)} • ${outletName(h,o)} — ${people.length} คน</div>${people.map(e=>`<div class="v23-person"><span><b>${e.id}</b> — ${e.name}<span class="small"> • ${e.role}</span></span><button class="btn btn-light" type="button" data-action="removeSelectedEmployee" data-code="${e.id}" style="padding:5px 9px;min-height:34px">เอาออก</button></div>`).join("")}</div>`;
+       }).join("")}
+     </div>`
+   : `<div class="v23-selected"><div class="v23-selected-head"><div class="v23-selected-title">พนักงานที่เลือก</div><span class="pill pill-blue">ยังไม่ได้เลือก</span></div><div class="small">เลือกคนได้หลายห้องอาหาร และค้นหาใหม่ได้โดยคนที่เลือกจะไม่หาย</div></div>`;
+
+ const listHtml=list.map(x=>{
+   const checked=movementSelectedCodes.has(x.e.id);
+   const disabled=!checked && atLimit;
+   return `<label class="employee-row" style="${disabled?'opacity:.45':''}">
+     <input class="mp" type="checkbox" value="${x.i}" ${checked?'checked':''} ${disabled?'disabled':''}>
+     <div><b>${x.e.id} — ${x.e.name}</b><div class="meta">${x.e.role} • ${hotelName(x.e.hotel)} • ${outletName(x.e.hotel,x.e.outlet)}</div></div>
+   </label>`;
+ }).join("") || `<div class="empty">ไม่พบพนักงานที่ค้นหา</div>`;
+
+ root.innerHTML=selectedHtml+`<div class="small" style="margin:8px 0 6px;font-weight:800">รายชื่อค้นหา / เลือกเพิ่ม</div>`+listHtml;
 }
+
 function movementPage(){
  const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
+ if(activeRq && !(movementSelectedCodes.size)) movementSelectedCodes=new Set(requestAssignedCodes(activeRq));
  // V10: Assignment Center shows ALL requests, regardless of the currently selected hotel.
- const allRequests=DATA.requests.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+ const allRequests=activeRequestList().slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
  const waiting=allRequests.filter(x=>x.status==="accepted");
  const pending=allRequests.filter(x=>x.status==="pending");
  const assigned=allRequests.filter(x=>x.status==="assigned");
@@ -605,7 +704,7 @@ function movementPage(){
         <div class="assign-card-top"><div><div class="assign-id">${x.id}</div><div class="assign-meta">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${statusCls(x)}">${statusLabel(x)}</span></div>
         <div class="assign-route"><div class="assign-box"><div class="lab">ต้นทาง / ผู้ส่งคน</div><div class="nm">${hotelName(x.fromHotel)}</div><div class="small">${outletName(x.fromHotel,x.fromOutlet)}</div></div><div class="assign-arrow">→</div><div class="assign-box"><div class="lab">ปลายทาง / จุดขอคน</div><div class="nm">${hotelName(x.toHotel)}</div><div class="small">${outletName(x.toHotel,x.toOutlet)}</div></div></div>
         <div class="assign-counts"><span class="assign-count">ตำแหน่ง: ${x.role}</span><span class="assign-count">ขอ: ${x.qty} คน</span><span class="assign-count">จัดแล้ว: ${assignedCount} คน</span><span class="assign-count">เหลือ: ${left} คน</span></div>
-        <div class="small" style="margin-top:9px">${x.reason||"ไม่ระบุงาน"}</div>
+        <div class="small" style="margin-top:9px">${x.reason||"ไม่ระบุงาน"}</div>${requestMovements(x).length?requestSourceSummaryHtml(x):""}
         <div class="assign-action">${action}</div>
       </div>`;
    }).join(""):`<div class="assign-empty">ยังไม่มีคำขอในระบบ</div>`}
@@ -629,10 +728,10 @@ function movementPage(){
    <div class="small" style="margin-top:10px;font-weight:700">คำขอนี้ต้องจัดให้ครบ ${rq.qty} คน • จัดแล้ว ${assignedCount} คน • เหลือ ${remaining} คน</div>
  </div>
  <main class="page"><button class="btn btn-light" data-action="backToAssignCenter">← กลับคำขอทั้งหมด</button>
- <div class="section-title"><div><h2>จัดคนตามคำขอ</h2><div class="small">เลือกพนักงานให้ครบตามจำนวนที่ขอ แล้วกดบันทึกได้เลย • ไม่ต้องกลับไปหน้า Request Center</div></div></div>
+ <div class="section-title"><div><h2>จัดคนตามคำขอ</h2><div class="small">เลือกพนักงานให้ครบตามจำนวนที่ขอ • คนแต่ละคนสามารถมาจากคนละห้องอาหารได้ • ต้นทางจริงจะอิงจากต้นสังกัดของพนักงาน</div></div></div>
  <div class="card"><div class="grid-2">
- <div><label>โรงแรมต้นทาง</label><select id="m_fromHotel">${Object.keys(DATA.hotels).map(id=>`<option value="${id}" ${id===fromHotel?"selected":""}>${hotelName(id)}</option>`).join("")}</select></div>
- <div><label>ห้องอาหารต้นทาง / จุดที่ส่งคนออก</label><select id="m_fromOutlet">${DATA.hotels[fromHotel].outlets.map(o=>`<option value="${o.id}" ${o.id===fromOutlet?"selected":""}>${o.name} • ${o.floor}</option>`).join("")}</select></div>
+ <div><label>โรงแรมต้นทาง (สำหรับพนักงานที่พิมพ์เอง)</label><select id="m_fromHotel">${Object.keys(DATA.hotels).map(id=>`<option value="${id}" ${id===fromHotel?"selected":""}>${hotelName(id)}</option>`).join("")}</select></div>
+ <div><label>ห้องอาหารต้นทาง (สำหรับพนักงานที่พิมพ์เอง)</label><select id="m_fromOutlet">${DATA.hotels[fromHotel].outlets.map(o=>`<option value="${o.id}" ${o.id===fromOutlet?"selected":""}>${o.name} • ${o.floor}</option>`).join("")}</select></div>
  <div><label>โรงแรมปลายทาง</label><select id="m_toHotel">${Object.keys(DATA.hotels).map(id=>`<option value="${id}" ${id===toHotel?"selected":""}>${hotelName(id)}</option>`).join("")}</select></div>
  <div><label>ห้องอาหารปลายทาง / จุดที่ไปช่วย</label><select id="m_toOutlet">${DATA.hotels[toHotel].outlets.map(o=>`<option value="${o.id}" ${o.id===toOutlet?"selected":""}>${o.name} • ${o.floor}</option>`).join("")}</select></div></div>
  <div style="margin-top:12px">
@@ -641,7 +740,7 @@ function movementPage(){
     <div class="employee-search-row"><input id="m_empSearch" placeholder="พิมพ์ชื่อ / รหัสพนักงานเพื่อค้นหา"><button class="btn btn-light" type="button" data-action="clearEmployeeSearch">ล้าง</button></div>
     <div id="m_empList" class="employee-list"></div>
     <div class="manual-employee"><div><label>ชื่อพนักงานกรณียังไม่มีในทะเบียน</label><input id="m_manualName" placeholder="เช่น สมชาย ใจดี"></div><div><label>รหัสพนักงาน (ถ้ามี)</label><input id="m_manualCode" placeholder="เช่น TEMP001"></div></div>
-    <div class="small">เลือกจากทะเบียนได้หลายคน หรือพิมพ์ชื่อใหม่เองได้ทันที</div>
+    <div class="small">พนักงานที่มีในทะเบียนจะใช้โรงแรม/ห้องอาหารต้นสังกัดของแต่ละคนเป็น “ต้นทางจริง” อัตโนมัติ • ถ้าพิมพ์ชื่อเอง ระบบจะใช้ต้นทางจากช่องด้านบน</div>
   </div>
  </div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addMovement">บันทึกการจัดคนไปช่วย</button></div>
@@ -658,7 +757,7 @@ function otPage(){
  </main>`;
 }
 function reports(){
- const allMov=DATA.movements,allReq=DATA.requests,allManualOT=DATA.ots;
+ const allMov=DATA.movements,allReq=activeRequestList(),allManualOT=DATA.ots;
  const allMonths=[...new Set([...allReq.map(x=>monthKey(x.date||x.createdAt)),...allMov.map(x=>monthKey(x.date||x.createdAt))])].sort().reverse();
  const currentMonth=allMonths[0]||monthKey(todayISO());
  const currentYear=yearKey(currentMonth);
@@ -813,7 +912,7 @@ function admin(){
  <div class="grid-2"><div class="card"><h3 style="margin-top:0">OT Rate</h3><label>ราคา / ชั่วโมง</label><input id="a_rate" type="number" value="${DATA.otRate}"><button class="btn btn-primary" style="margin-top:10px" data-action="saveRate">บันทึกเรท</button></div>
  <div class="card"><h3 style="margin-top:0">ตำแหน่ง</h3><label>เพิ่มตำแหน่งใหม่</label><input id="a_role" placeholder="เช่น Host / Bartender"><button class="btn btn-primary" style="margin-top:10px" data-action="addRole">เพิ่มตำแหน่ง</button><div style="margin-top:10px">${DATA.positions.map((x,i)=>`<span class="pill pill-blue" style="margin:3px">${x} <button data-action="delRole" data-i="${i}" style="border:0;background:transparent;color:#24639f">×</button></span>`).join("")}</div></div></div>
  <div class="card" style="margin-top:16px"><h3 style="margin-top:0">ห้องอาหาร / สถานที่</h3><div class="grid-2"><div><label>โรงแรม</label><select id="a_hotel"><option value="baiyoke">Baiyoke Sky</option><option value="queensland">Queensland</option></select></div><div><label>ชื่อห้องอาหาร</label><input id="a_outlet" placeholder="All Day Dining"></div><div><label>ชั้น / โซน</label><input id="a_floor" placeholder="ชั้น 75"></div></div><button class="btn btn-primary" style="margin-top:10px" data-action="addOutlet">เพิ่มสถานที่</button></div>
- <div class="card" style="margin-top:16px"><b>ข้อมูลระบบ</b><div class="small" style="margin-top:5px">พนักงาน ${DATA.employees.length} • Request ${DATA.requests.length} • Movement ${DATA.movements.length} • OT ${DATA.ots.length}</div></div>
+ <div class="card" style="margin-top:16px"><b>ข้อมูลระบบ</b><div class="small" style="margin-top:5px">พนักงาน ${DATA.employees.length} • Request ${activeRequestList().length} • Movement ${DATA.movements.length} • OT ${DATA.ots.length}</div></div>
  </main>`;
 }
 function render(){let body=page==="select"?selectPage():page==="dashboard"?dashboard():page==="employees"?employees():page==="inbox"?inboxPage():page==="request"?requestPage():page==="movement"?movementPage():page==="ot"?otPage():page==="reports"?reports():admin();$("app").innerHTML=body}
@@ -875,25 +974,25 @@ function v21Dashboard(){
  if(v21CanPage('employees'))quick.push(action('employees','ทะเบียนพนักงาน','Employee Master','employees'));
  if(v21CanPage('request'))quick.push(action('request','ขอคนช่วย','Request Support','request'));
  if(v21CanPage('inbox'))quick.push(action('report','📥 Request Center','ส่งคำขอ / รับคำขอ','inbox'));
- if(v21CanPage('movement'))quick.push(action('movement','จัดคนไปช่วย',`รอจัด ${DATA.requests.filter(x=>x.status==='accepted').length} คำขอ • คำขอทั้งหมด ${DATA.requests.length}`,'movement'));
+ if(v21CanPage('movement'))quick.push(action('movement','จัดคนไปช่วย',`รอจัด ${activeRequestList().filter(x=>x.status==='accepted').length} คำขอ • คำขอทั้งหมด ${activeRequestList().length}`,'movement'));
  if(v21CanPage('ot'))quick.push(action('ot','บันทึก OT','OT Management','ot'));
  if(v21CanPage('reports'))quick.push(action('report','รายงาน','Reports & Analytics','reports'));
  return `${v21Header()}<main class="page"><div class="hero"><div class="eyebrow">F&B OPERATIONS HUB</div><h1>${h.short}</h1><p>F&B MANPOWER • Staff Movement • OT • Reports</p><div style="margin-top:10px"><span class="role-pill">${v21CurrentUser.roleLabel}</span></div></div>
  <div class="section-title"><div><h2>Quick Actions</h2><div class="small">เมนูจะแสดงตามสิทธิ์ของผู้ใช้งาน</div></div></div><div class="actions">${quick.join('')}</div>
  ${v21CanPage('admin')?`<div class="section-title"><div><h2>Administration</h2><div class="small">Restricted • Admin only</div></div></div><div class="actions">${action('admin','Admin Center','Master Data / Permission / Audit','admin')}${action('movement','🧪 ทดลอง Workflow','สร้างคำขอตัวอย่าง','demoWorkflow')}</div>`:''}
- <div class="section-title"><div><h2>สรุป</h2><div class="small">ภาพรวมข้อมูลของ ${hotelName(currentHotel)}</div></div></div><div class="kpis"><div class="kpi"><div class="l">คำขอทั้งหมด</div><div class="v">${DATA.requests.length}</div></div><div class="kpi"><div class="l">รอจัดคน</div><div class="v">${DATA.requests.filter(x=>x.status==='accepted').length}</div></div><div class="kpi"><div class="l">จัดคนแล้ว</div><div class="v">${DATA.requests.filter(x=>x.status==='assigned').length}</div></div><div class="kpi"><div class="l">Movement</div><div class="v">${DATA.movements.length}</div></div></div><div class="kpis" style="margin-top:14px"><div class="kpi"><div class="l">OT ชั่วโมง</div><div class="v">${hrs.toFixed(2)}</div></div><div class="kpi"><div class="l">ค่า OT</div><div class="v">${money(cash)}</div></div></div></main>`;
+ <div class="section-title"><div><h2>สรุป</h2><div class="small">ภาพรวมข้อมูลของ ${hotelName(currentHotel)}</div></div></div><div class="kpis"><div class="kpi"><div class="l">คำขอทั้งหมด</div><div class="v">${activeRequestList().length}</div></div><div class="kpi"><div class="l">รอจัดคน</div><div class="v">${activeRequestList().filter(x=>x.status==='accepted').length}</div></div><div class="kpi"><div class="l">จัดคนแล้ว</div><div class="v">${activeRequestList().filter(x=>x.status==='assigned').length}</div></div><div class="kpi"><div class="l">Movement</div><div class="v">${DATA.movements.length}</div></div></div><div class="kpis" style="margin-top:14px"><div class="kpi"><div class="l">OT ชั่วโมง</div><div class="v">${hrs.toFixed(2)}</div></div><div class="kpi"><div class="l">ค่า OT</div><div class="v">${money(cash)}</div></div></div></main>`;
 }
 function v21Admin(){return `${v21Header()}<main class="page"><button class="btn btn-light" data-action="nav" data-page="dashboard">← Dashboard</button><div class="section-title"><div><h2>Admin Center</h2><div class="small">Restricted • ${v21CurrentUser.roleLabel}</div></div><span class="role-pill">ADMIN ACCESS</span></div>
  <div class="grid-2"><div class="card"><h3 style="margin-top:0">OT Rate</h3><label>ราคา / ชั่วโมง</label><input id="a_rate" type="number" value="${DATA.otRate}"><button class="btn btn-primary" style="margin-top:10px" data-action="saveRate">บันทึกเรท</button></div>
  <div class="card"><h3 style="margin-top:0">ตำแหน่ง</h3><label>เพิ่มตำแหน่งใหม่</label><input id="a_role" placeholder="เช่น Host / Bartender"><button class="btn btn-primary" style="margin-top:10px" data-action="addRole">เพิ่มตำแหน่ง</button><div style="margin-top:10px">${DATA.positions.map((x,i)=>`<span class="pill pill-blue" style="margin:3px">${x} <button data-action="delRole" data-i="${i}" style="border:0;background:transparent;color:#24639f">×</button></span>`).join('')}</div></div></div>
- <div class="card" style="margin-top:16px"><b>Master Data</b><div class="small" style="margin-top:5px">พนักงาน ${DATA.employees.length} • Request ${DATA.requests.length} • Movement ${DATA.movements.length} • OT ${DATA.ots.length}</div></div>
+ <div class="card" style="margin-top:16px"><b>Master Data</b><div class="small" style="margin-top:5px">พนักงาน ${DATA.employees.length} • Request ${activeRequestList().length} • Movement ${DATA.movements.length} • OT ${DATA.ots.length}</div></div>
  <div class="card" style="margin-top:16px"><h3 style="margin-top:0">Role & Permission</h3><div class="report-table-wrap"><table><thead><tr><th>Role</th><th>Request</th><th>Movement</th><th>OT</th><th>Report</th><th>Admin</th></tr></thead><tbody><tr><td>Staff</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Supervisor</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr><tr><td>F&B Manager</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Admin</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Super Admin</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr></tbody></table></div><div class="small" style="margin-top:10px">V21 Demo: สิทธิ์ถูกตรวจทั้งระดับเมนูและ action • ระบบใช้งานจริงควรย้าย Authentication/Authorization ไป Backend หรือ Supabase Auth</div></div>
  <div class="card" style="margin-top:16px"><div class="section-title" style="margin:0"><div><h3>Audit Log</h3><div class="small">บันทึกการใช้งานของผู้ดูแลระบบ</div></div></div><div class="audit-list">${v21AuditRows()}</div></div></main>`}
 
 async function v21Hash(s){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function v21DoLogin(user,pass){const u=V21_AUTH_USERS[user];if(!u)return false;const hash=await v21Hash(pass);if(hash!==u.passwordHash)return false;v21CurrentUser={id:user,...u,loginAt:Date.now()};sessionStorage.setItem('fb_manpower_session',JSON.stringify(v21CurrentUser));currentHotel=u.hotel;page='dashboard';v21Audit('LOGIN',`เข้าสู่ระบบ ${u.roleLabel}`);render();toast(`Welcome ${u.name}`);return true}
 function v21Logout(){if(v21CurrentUser)v21Audit('LOGOUT','ออกจากระบบ');v21CurrentUser=null;sessionStorage.removeItem('fb_manpower_session');currentHotel=null;page='login';render()}
-function v21Render(){if(!v21CurrentUser){page='login';$('app').innerHTML=v21LoginPage();return}if(!v21CanPage(page))page='dashboard';let body=page==='select'?selectPage():page==='dashboard'?v21Dashboard():page==='admin'?v21Admin():page==='employees'?employees():page==='inbox'?inboxPage():page==='request'?requestPage():page==='movement'?movementPage():page==='ot'?otPage():page==='reports'?reports():v21Dashboard();$('app').innerHTML=body}
+function v21Render(){if(!v21CurrentUser){page='login';$('app').innerHTML=v21LoginPage();return}if(!v21CanPage(page))page='dashboard';let body=page==='select'?selectPage():page==='dashboard'?v21Dashboard():page==='admin'?v21Admin():page==='employees'?employees():page==='inbox'?inboxPage():page==='request'?requestPage():page==='movement'?movementPage():page==='ot'?otPage():page==='reports'?reports():v21Dashboard();$('app').innerHTML=body;if(page==="movement"){renderMovementEmployeePicker()}}
 function go(p){if(!v21CurrentUser){page='login';return v21Render()}if(!v21CanPage(p)){toast('ไม่มีสิทธิ์เข้าหน้านี้');return}page=p;v21Render()}
 function header(){return v21Header()}
 function dashboard(){return v21Dashboard()}
@@ -909,7 +1008,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-action]')
  if(pageMap[a]&&!v21CanPage(pageMap[a])){e.preventDefault();e.stopImmediatePropagation();toast('ไม่มีสิทธิ์ดำเนินการ');return}
  const adminActions=['addEmployee','delEmployee','saveRate','addRole','delRole','addOutlet'];
  if(adminActions.includes(a)&&!v21CanPage('admin')){e.preventDefault();e.stopImmediatePropagation();toast('Admin only');return}
- const movementActions=['addMovement','assignRequest','assignPendingRequest','viewAssignedRequest','backToAssignCenter'];
+ const movementActions=['addMovement','assignRequest','assignPendingRequest','viewAssignedRequest','backToAssignCenter','removeSelectedEmployee'];
  if(movementActions.includes(a)&&!v21CanPage('movement')){e.preventDefault();e.stopImmediatePropagation();toast('Supervisor+ only');return}
  const reportActions=['printReport','applyReportPeriod','reportChartMetric','copyLine'];
  if(reportActions.includes(a)&&!v21CanPage('reports')){e.preventDefault();e.stopImmediatePropagation();toast('Report access only');return}
@@ -950,15 +1049,43 @@ document.addEventListener("click",async e=>{
 }
  
 else if(a==="clearEmployeeSearch"){const x=document.getElementById("m_empSearch");if(x)x.value="";renderMovementEmployeePicker()}
+else if(a==="removeSelectedEmployee"){
+ const code=el.dataset.code;
+ if(code) movementSelectedCodes.delete(code);
+ renderMovementEmployeePicker();
+}
+else if(a==="deleteRequest"){
+ const rq=DATA.requests.find(x=>x.id===el.dataset.id);
+ if(!rq)return;
+ if(!canDeleteRequest(rq))return toast("คำขอนี้ไม่สามารถลบได้แล้ว เพราะมีการจัดคนหรือสิทธิ์ไม่ถึง");
+ if(!confirm(`ยืนยันลบคำขอ ${rq.id} ออกจากการทำงาน?`))return;
+ rq.status="deleted";rq.deletedAt=Date.now();rq.deletedBy=v21CurrentUser?.id||"unknown";
+ saveRequests();
+ v21Audit('DELETE_REQUEST',`${rq.id} • ลบออกจากงาน (เก็บประวัติไว้)`);
+ toast("ลบคำขอออกจากงานแล้ว");
+ go("inbox");
+}
+else if(a==="closeRequest"){
+ const rq=DATA.requests.find(x=>x.id===el.dataset.id);
+ if(!rq)return;
+ if(!canCloseRequest(rq))return toast("คำขอนี้ยังจัดคนไม่ครบหรือไม่มีสิทธิ์ปิดงาน");
+ rq.status="done";rq.closedAt=Date.now();rq.closedBy=v21CurrentUser?.id||"unknown";
+ saveRequests();
+ v21Audit('CLOSE_REQUEST',`${rq.id} • ปิดงาน`);
+ toast("ปิดงานแล้ว • ยังเก็บไว้ในรายงาน");
+ go("inbox");
+}
 
 else if(a==="addMovement"){
- const picked=[...document.querySelectorAll(".mp:checked")].map(x=>DATA.employees[+x.value]);
+ const picked=selectedMovementEmployees();
  const manualName=($("m_manualName")?.value||"").trim();
  const manualCode=($("m_manualCode")?.value||"").trim()||("TEMP-"+Date.now());
+ const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
+ if(activeRq?.status==="assigned" || activeRq?.status==="done")return toast("คำขอนี้จัดครบและปิดงานแล้ว");
  if(!picked.length&&!manualName)return toast("เลือกพนักงาน หรือพิมพ์ชื่อพนักงานเองก่อน");
  const count=picked.length+(manualName?1:0);
- const activeRq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;
  if(activeRq && count!==Number(activeRq.qty))return toast(`คำขอนี้ต้องจัดให้ครบ ${activeRq.qty} คน • ตอนนี้เลือก ${count} คน`);
+
  const mvStart=activeRq?.start||"09:00";
  const mvEnd=activeRq?.end||"15:00";
  const mvDate=activeRq?.date||new Date().toLocaleDateString("th-TH");
@@ -966,13 +1093,33 @@ else if(a==="addMovement"){
  const mvWorked=movementWorked(mvStart,mvEnd);
  const mvTotal=hours(mvStart,mvEnd);
  const mvOTAmount=movementOTAmount(mvStart,mvEnd,DATA.otRate);
- const base={fromHotel:$("m_fromHotel").value,fromOutlet:$("m_fromOutlet").value,toHotel:$("m_toHotel").value,toOutlet:$("m_toOutlet").value,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,breakHours:BREAK_HOURS,workedHours:mvWorked,regularWorkedHours:REGULAR_WORK_HOURS,otHours:mvOT,otRate:DATA.otRate,otAmount:mvOTAmount,requestId:activeRq?.id||null};
- picked.forEach(x=>DATA.movements.push({...base,code:x.id,name:x.name}));
- if(manualName)DATA.movements.push({...base,code:manualCode,name:manualName,manual:true});
+ const destHotel=activeRq?.toHotel||$("m_toHotel").value;
+ const destOutlet=activeRq?.toOutlet||$("m_toOutlet").value;
+ const common={toHotel:destHotel,toOutlet:destOutlet,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,breakHours:BREAK_HOURS,workedHours:mvWorked,regularWorkedHours:REGULAR_WORK_HOURS,otHours:mvOT,otRate:DATA.otRate,otAmount:mvOTAmount,requestId:activeRq?.id||null};
+
+ picked.forEach(x=>{
+   DATA.movements.push({...common,fromHotel:x.hotel,fromOutlet:x.outlet,code:x.id,name:x.name,sourceType:"employee_master"});
+ });
+ if(manualName){
+   DATA.movements.push({...common,fromHotel:$("m_fromHotel").value,fromOutlet:$("m_fromOutlet").value,code:manualCode,name:manualName,manual:true,sourceType:"manual"});
+ }
  saveMovements();
- if(activeRq){activeRq.status="assigned";activeRq.assignedCodes=[...picked.map(x=>x.id),...(manualName?[manualCode]:[])];activeRq.assignedAt=Date.now();saveRequests();window.pendingRequestId=null;}
- v21Audit('ASSIGN_MOVEMENT',`${count} คน • ${base.fromHotel} → ${base.toHotel}${activeRq?.id?' • '+activeRq.id:''}`);toast(`บันทึก ${count} คนแล้ว`);go("movement")
+
+ if(activeRq){
+   const codes=[...picked.map(x=>x.id),...(manualName?[manualCode]:[])];
+   activeRq.status="assigned";
+   activeRq.assignedCodes=codes;
+   activeRq.assignedAt=Date.now();
+   activeRq.assignmentSources=[...new Map(DATA.movements.filter(x=>x.requestId===activeRq.id).map(x=>[`${x.fromHotel}||${x.fromOutlet}`,{hotel:x.fromHotel,outlet:x.fromOutlet}])).values()];
+   saveRequests();
+   window.pendingRequestId=null;
+   movementSelectedCodes.clear();
+ }
+ v21Audit('ASSIGN_MOVEMENT',`${count} คน • หลายต้นทาง → ${hotelName(common.toHotel)} • ${activeRq?.id||'-'}`);
+ toast(`บันทึก ${count} คนแล้ว • รองรับหลายห้องอาหาร`);
+ go("movement")
 }
+
  else if(a==="addOT"){const emp=DATA.employees[+$("o_emp").value],rate=+$("o_rate").value,start=$("o_start").value,end=$("o_end").value,h=hours(start,end);DATA.ots.push({code:emp.id,name:emp.name,type:$("o_type").value,date:normalizeISODate($("o_date").value),start,end,hours:h,rate,note:$("o_note").value,source:"manual"});saveOT();toast(`OT ${h.toFixed(2)} ชม. • ${money(h*rate)}`);go("reports")}
  
 
@@ -980,10 +1127,10 @@ else if(a==="requestTab"){
  requestTab=el.dataset.tab==="receive"?"receive":"sent";
  const root=document.getElementById("requestCenterList");
  if(root){
-  const rows=requestTab==="sent"?DATA.requests.filter(x=>x.toHotel===currentHotel):DATA.requests.filter(x=>x.fromHotel===currentHotel);
+  const rows=requestTab==="sent"?activeRequestList().filter(x=>x.toHotel===currentHotel):activeRequestList().filter(x=>x.fromHotel===currentHotel);
   const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"จัดคนแล้ว":"ปิดงาน";
   const cls=x=>x.status==="pending"?"status-pending":x.status==="accepted"?"status-accepted":x.status==="assigned"?"status-assigned":"status-done";
-  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทาง / ผู้ส่งคน</div><div class="name">${hotelName(x.fromHotel)}</div><div class="small">${outletName(x.fromHotel,x.fromOutlet)}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / จุดที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}</div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
+  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทางตามคำขอ</div><div class="name">${hotelName(x.fromHotel)}</div><div class="small">${outletName(x.fromHotel,x.fromOutlet)}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / จุดที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">ลบคำขอ</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ปิดงาน</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
  }
 }
 
@@ -993,11 +1140,13 @@ else if(a==="acceptRequest"){
 }
 else if(a==="assignRequest"){
  const rq=DATA.requests.find(x=>x.id===el.dataset.id); if(!rq)return;
+ movementSelectedCodes=new Set(requestAssignedCodes(rq));
  window.pendingRequestId=rq.id;go("movement")
 }
 else if(a==="assignPendingRequest"){
  const rq=DATA.requests.find(x=>x.id===el.dataset.id); if(!rq)return;
  rq.status="accepted";rq.acceptedAt=Date.now();saveRequests();
+ movementSelectedCodes=new Set(requestAssignedCodes(rq));
  window.pendingRequestId=rq.id;toast("เปิดคำขอแล้ว • พร้อมจัดคน");go("movement")
 }
 else if(a==="openRequestForAssign"){
@@ -1009,7 +1158,7 @@ else if(a==="viewAssignedRequest"){
  window.pendingRequestId=rq.id;go("movement")
 }
 else if(a==="backToAssignCenter"){
- window.pendingRequestId=null;go("movement")
+ window.pendingRequestId=null;movementSelectedCodes.clear();go("movement")
 }
 else if(a==="demoWorkflow"){
  const target=currentHotel||"baiyoke";
@@ -1046,6 +1195,14 @@ document.addEventListener("input",e=>{
  }
 });
 document.addEventListener("change",e=>{
+ if(e.target.classList?.contains("mp")){
+   const emp=DATA.employees[+e.target.value];
+   if(emp){
+     if(e.target.checked) movementSelectedCodes.add(emp.id);
+     else movementSelectedCodes.delete(emp.id);
+     renderMovementEmployeePicker();
+   }
+ }
  if(e.target.id==="e_hotel")$("e_outlet").innerHTML=DATA.hotels[e.target.value].outlets.map(o=>`<option value="${o.id}">${o.name} • ${o.floor}</option>`).join("")
  if(e.target.id==="m_fromHotel")$("m_fromOutlet").innerHTML=DATA.hotels[e.target.value].outlets.map(o=>`<option value="${o.id}">${o.name} • ${o.floor}</option>`).join("")
  if(e.target.id==="m_toHotel")$("m_toOutlet").innerHTML=DATA.hotels[e.target.value].outlets.map(o=>`<option value="${o.id}">${o.name} • ${o.floor}</option>`).join("")
