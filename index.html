@@ -1094,14 +1094,14 @@ function filteredEmployeesForMovement(){
  const date=activeRq?.date||todayISO(), start=document.getElementById('m_helpStart')?.value||activeRq?.start||'15:00', end=document.getElementById('m_helpEnd')?.value||activeRq?.end||'20:00';
  const destHotel=activeRq?.toHotel||document.getElementById('m_toHotel')?.value, destOutlet=activeRq?.toOutlet||null;
  const scope=document.getElementById('m_empScope')?.value||'eligible';
- return DATA.employees.map((e,i)=>({e,i,elig:helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet)})).filter(x=>{
+ const all=DATA.employees.map((e,i)=>({e,i,elig:helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet)})).filter(x=>{
    const hay=(x.e.id+" "+x.e.name+" "+x.e.role+" "+hotelName(x.e.hotel)+" "+outletName(x.e.hotel,x.e.outlet)).toLowerCase();
    if(q&&!hay.includes(q))return false;
-   if(sourceHotel && x.e.hotel!==sourceHotel)return false;
-   if(sourceOutlet && x.e.outlet!==sourceOutlet)return false;
-   if(scope==='eligible'&&!x.elig.ok)return false;
    return true;
  });
+ const eligible=all.filter(x=>x.elig.ok);
+ // Keep the names visible when nobody is currently eligible; ineligible rows remain disabled with a reason.
+ return scope==='eligible' ? (eligible.length ? eligible : all) : all;
 }
 function selectedMovementEmployees(){
  return [...movementSelectedCodes]
@@ -1114,11 +1114,10 @@ function v28SearchEmployees(term,date,start,end,activeRq,destHotel,destOutlet){
  const q=String(term||'').trim().toLowerCase();
  if(!q)return [];
  const selected=new Set(movementSelectedCodes);
+ const sourceHotel=activeRq?.fromHotel||null, sourceOutlet=activeRq?.fromOutlet||null;
  const rows=DATA.employees.map((e,i)=>{
    const hay=[e.name,e.id,e.role,e.hotel,e.outlet,outletName(e.hotel,e.outlet),hotelName(e.hotel)].join(' ').toLowerCase();
    if(!hay.includes(q))return null;
-   if(sourceHotel && e.hotel!==sourceHotel)return null;
-   if(sourceOutlet && e.outlet!==sourceOutlet)return null;
    const elig=helperEligibility(e,date,start,end,activeRq?.id||null,destHotel,destOutlet);
    return {e,i,elig,already:selected.has(e.id)};
  }).filter(Boolean);
