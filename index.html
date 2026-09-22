@@ -273,9 +273,18 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 .v28-ac-chip button{border:0;background:transparent;color:#a52d33;font-weight:900;padding:0 2px;cursor:pointer}
 .v28-ac-hint{font-size:10px;color:#72869b;margin-top:6px}
 </style>
+
+<style id="v29-line-report-css">
+.v29-line-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,#06c755,#00a94f);color:#fff!important;border:0;border-radius:11px;padding:9px 13px;font-weight:900;font-size:11px;box-shadow:0 7px 16px rgba(0,169,79,.18)}
+.v29-line-btn:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.v29-line-btn.secondary{background:#fff;color:#087b3b!important;border:1px solid #bfe8cf;box-shadow:none}
+.v29-line-status{font-size:10px;color:#648099;margin-top:6px}
+.v29-line-box{background:#f5fff9;border:1px solid #ccefd9;border-radius:14px;padding:12px;margin-top:10px}
+.v29-line-preview{white-space:pre-wrap;background:#fff;border:1px dashed #c8dfd2;border-radius:11px;padding:10px;font-size:11px;color:#35584a;max-height:240px;overflow:auto}
+</style>
 </head>
 <body>
-<div id="app"></div><div id="toast" class="toast"></div>
+<div id="app"></div><div id="v29LinePreviewHost" style="max-width:1180px;margin:0 auto;padding:0 16px 16px"></div><div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const LOGOS={
@@ -376,6 +385,121 @@ function cloudSetStatus(state,error=''){
    el.title=error||'Shared database status';
  }
 }
+
+function v29HotelName(h){return hotelName(h)}
+function v29OutletName(h,o){return outletName(h,o)}
+function v29StatusLabel(s){
+ const m={pending:'รอจัดคน',accepted:'รับคำขอแล้ว',assigned:'จัดคนแล้ว',done:'เสร็จสิ้น',cancelled:'ยกเลิก'};
+ return m[s]||s||'-';
+}
+function v29EmployeeNames(codes){
+ return (codes||[]).map(code=>DATA.employees.find(e=>e.id===code)||{id:code,name:code}).filter(Boolean);
+}
+function v29RequestMovements(r){
+ return (DATA.movements||[]).filter(m=>m.requestId===r.id);
+}
+function v29FormatEmployee(e){
+ return `${e.name} (${e.id}) • ${v29OutletName(e.hotel,e.outlet)} • ${e.shiftStart||'--:--'}-${e.shiftEnd||'--:--'}`;
+}
+function v29RequestReport(r){
+ const moves=v29RequestMovements(r);
+ const assignedCodes=[...(r.assignedCodes||[]),...moves.map(m=>m.code).filter(Boolean)].filter((v,i,a)=>a.indexOf(v)===i);
+ const assigned=v29EmployeeNames(assignedCodes);
+ const lines=[
+  '📋 F&B MANPOWER — คำขอพนักงาน',
+  `Request: ${r.id||'-'}`,
+  `สถานะ: ${v29StatusLabel(r.status)}`,
+  `วันที่: ${r.date||'-'}`,
+  `เวลา: ${(r.start||'-')} - ${(r.end||'-')}`,
+  `โรงแรมต้นทาง: ${v29HotelName(r.fromHotel)}`,
+  `ห้องอาหารต้นทาง: ${v29OutletName(r.fromHotel,r.fromOutlet)}`,
+  `โรงแรมปลายทาง: ${v29HotelName(r.toHotel)}`,
+  `ห้องอาหารปลายทาง: ${v29OutletName(r.toHotel,r.toOutlet)}`,
+  `ตำแหน่ง: ${r.role||'-'}`,
+  `จำนวนที่ขอ: ${r.qty||0} คน`,
+  `เหตุผล: ${r.reason||'-'}`,
+  `ผู้อนุมัติ: ${r.approvedBy||r.approverName||'-'}`,
+  `ผู้ขอ: ${r.createdByName||r.requester||'-'}`
+ ];
+ if(assigned.length){
+   lines.push('',`👥 จัดคนแล้ว ${assigned.length} คน:`);
+   if(moves.length){
+     moves.forEach((m,i)=>lines.push(`${i+1}. ${m.name||m.code||'-'} (${m.code||'-'}) • ${v29OutletName(m.fromHotel,m.fromOutlet)} • ${m.start||'-'}-${m.end||'-'} • OT ${Number(m.otHours||0).toFixed(2)} ชม.`));
+   }else assigned.forEach((e,i)=>lines.push(`${i+1}. ${v29FormatEmployee(e)}`));
+ }
+ if(r.cancelledAt) lines.push(`ยกเลิกโดย: ${r.cancelledBy||'-'}`);
+ return lines.join('\n');
+}
+function v29AssignmentReport(r){
+ const moves=v29RequestMovements(r);
+ const lines=[
+  '👥 F&B MANPOWER — รายงานจัดคนไปช่วย',
+  `Request: ${r.id||'-'}`,
+  `สถานะ: ${v29StatusLabel(r.status)}`,
+  `วันที่: ${r.date||'-'}`,
+  `ต้นทางตามคำขอ: ${v29HotelName(r.fromHotel)} / ${v29OutletName(r.fromHotel,r.fromOutlet)}`,
+  `ปลายทาง: ${v29HotelName(r.toHotel)} / ${v29OutletName(r.toHotel,r.toOutlet)}`,
+  `จำนวนที่ขอ: ${r.qty||0} คน`,
+  `จำนวนที่จัด: ${moves.length||r.assignedCodes?.length||0} คน`
+ ];
+ if(moves.length){
+   lines.push('',...moves.map((m,i)=>`${i+1}. ${m.name||m.code||'-'} (${m.code||'-'}) • ${v29OutletName(m.fromHotel,m.fromOutlet)} • ${m.start||'-'}-${m.end||'-'} • OT ${Number(m.otHours||0).toFixed(2)} ชม.`));
+   const ot=moves.reduce((n,m)=>n+Number(m.otHours||0),0);
+   lines.push('',`⏱ OT รวม: ${ot.toFixed(2)} ชั่วโมง`);
+ } else if(Array.isArray(r.assignedCodes)&&r.assignedCodes.length){
+   lines.push('',...v29EmployeeNames(r.assignedCodes).map((e,i)=>`${i+1}. ${v29FormatEmployee(e)}`));
+ }
+ if(r.reason) lines.push(`เหตุผล: ${r.reason}`);
+ return lines.join('\n');
+}
+function v29CancellationReport(r){
+ return [
+  '❌ F&B MANPOWER — ยกเลิกคำขอ',
+  `Request: ${r.id||'-'}`,
+  `วันที่: ${r.date||'-'}`,
+  `ต้นทาง: ${v29HotelName(r.fromHotel)} / ${v29OutletName(r.fromHotel,r.fromOutlet)}`,
+  `ปลายทาง: ${v29HotelName(r.toHotel)} / ${v29OutletName(r.toHotel,r.toOutlet)}`,
+  `ตำแหน่ง: ${r.role||'-'}`,
+  `จำนวนที่ขอ: ${r.qty||0} คน`,
+  `เหตุผลการยกเลิก: ${r.cancelReason||r.reason||'-'}`,
+  `ยกเลิกโดย: ${r.cancelledBy||'-'}`
+ ].join('\n');
+}
+function v29ReportSummary(){
+ const rs=Array.isArray(DATA.requests)?DATA.requests:[];
+ const active=rs.filter(r=>r.status!=='cancelled');
+ const assigned=active.reduce((n,r)=>n+(r.assignedCodes||[]).length,0);
+ const cancelled=rs.filter(r=>r.status==='cancelled').length;
+ const pending=rs.filter(r=>r.status==='pending').length;
+ return [
+  '📊 F&B MANPOWER — สรุปรายงาน',
+  `คำขอทั้งหมด: ${rs.length} รายการ`,
+  `รอจัดคน: ${pending} รายการ`,
+  `คำขอที่ยกเลิก: ${cancelled} รายการ`,
+  `พนักงานที่จัดไปช่วย: ${assigned} คน`,
+  `อัปเดต: ${new Date().toLocaleString('th-TH')}`
+ ].join('\n');
+}
+async function v29ShareLine(text){
+ const url='https://line.me/R/share?text='+encodeURIComponent(text);
+ try{
+   window.open(url,'_blank','noopener,noreferrer');
+   toast('เปิดหน้าส่งข้อความ LINE แล้ว','ok');
+   return true;
+ }catch(err){}
+ if(navigator.share){
+   try{await navigator.share({title:'F&B Manpower Report',text});toast('เปิดเมนูแชร์แล้ว','ok');return true;}catch(err){if(err?.name==='AbortError')return false;}
+ }
+ try{await navigator.clipboard.writeText(text);toast('คัดลอกรายงานแล้ว — เปิด LINE แล้ววางข้อความได้เลย','ok');return true}catch{window.prompt('คัดลอกรายงานไปส่ง LINE',text);return true}
+}
+function v29ShowLinePreview(text,title='รายงาน LINE'){
+ const safe=text.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const host=document.getElementById('v29LinePreviewHost');
+ if(!host)return;
+ host.innerHTML=`<div class="v29-line-box"><b>${title}</b><div class="v29-line-preview">${safe}</div><div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap"><button class="v29-line-btn" type="button" data-action="sendCurrentLine">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyCurrentLine">คัดลอกข้อความ</button></div></div>`;
+ window.v29CurrentLineText=text;
+}
+
 function cloudHeaders(json=false){
  const h={apikey:FNB_CLOUD.key,Authorization:'Bearer '+FNB_CLOUD.key};
  if(json){
@@ -779,6 +903,9 @@ function inboxPage(){
     ${canAccept?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:canAssign?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:12px">${mode==="sent"?"คำขอของฉัน":"พนักงานที่จัด: "+((x.assignedCodes||[]).join(", ")||"-")}</div>`}
     ${requestSourceSummaryHtml(x)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>
+      ${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}
+      ${x.status==="cancelled"?`<button class="v29-line-btn secondary" type="button" data-action="sendCancelLine" data-id="${x.id}">LINE ยกเลิก</button>`:''}
       ${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิกคำขอ</button>`:''}
       ${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}
       ${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}
@@ -809,7 +936,7 @@ function requestPage(){
  <div style="margin-top:12px"><label>เหตุผล / งาน</label><textarea id="r_reason" placeholder="เช่น งานจัดเลี้ยง / Breakfast Support / คนขาดจากวันหยุด-ลา"></textarea></div>
  <div id="requestManpowerSnapshot" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">${manpowerSnapshotHtml(Object.keys(DATA.hotels).find(id=>id!==currentHotel)||currentHotel,DATA.hotels[Object.keys(DATA.hotels).find(id=>id!==currentHotel)||currentHotel].outlets[0].id,todayISO(),'กำลังคนต้นทาง / Source Manpower','09:00','15:00')}${manpowerSnapshotHtml(currentHotel,DATA.hotels[currentHotel].outlets[0].id,todayISO(),'กำลังคนปลายทาง / Destination Manpower','09:00','15:00')}</div><div id="requestWorkforceBoard">${workforceBoardHtml(todayISO(),'09:00','15:00',[currentHotel])}</div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addRequest">ส่งคำขอคนช่วย</button></div>
- <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ต้นทาง</th><th>ปลายทาง</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th><th>สถานะ / ต้นทางจริง</th><th>จัดการ</th></tr></thead><tbody>${activeRequestList().map(x=>`<tr><td>${x.date||"-"}</td><td><b>${hotelName(x.fromHotel)}</b><br>${outletName(x.fromHotel,x.fromOutlet)}</td><td><b>${hotelName(x.toHotel)}</b><br>${outletName(x.toHotel,x.toOutlet)}</td><td>${x.role}</td><td>${x.qty}</td><td>${x.start}-${x.end}</td><td>${x.status}<br>${requestSourceBreakdown(x).filter(s=>s.people>0).map(s=>`${outletName(s.hotel,s.outlet)} ${s.people} คน`).join("<br>")||"-"}</td><td>${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ได้คนแล้ว</button>`:`-`}</td></tr>`).join("")||`<tr><td colspan="8" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
+ <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ต้นทาง</th><th>ปลายทาง</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th><th>สถานะ / ต้นทางจริง</th><th>จัดการ</th></tr></thead><tbody>${activeRequestList().map(x=>`<tr><td>${x.date||"-"}</td><td><b>${hotelName(x.fromHotel)}</b><br>${outletName(x.fromHotel,x.fromOutlet)}</td><td><b>${hotelName(x.toHotel)}</b><br>${outletName(x.toHotel,x.toOutlet)}</td><td>${x.role}</td><td>${x.qty}</td><td>${x.start}-${x.end}</td><td>${x.status}<br>${requestSourceBreakdown(x).filter(s=>s.people>0).map(s=>`${outletName(s.hotel,s.outlet)} ${s.people} คน`).join("<br>")||"-"}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">จัดคน</button>`:''}${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ได้คนแล้ว</button>`:`-`}</div></td></tr>`).join("")||`<tr><td colspan="8" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
 </main>`;
 }
 
@@ -1211,7 +1338,7 @@ OT รวมเดือนนี้: ${totalOTMonthHours.toFixed(2)} ชม. / 
 เทียบปีก่อน: ${percentChange(ys.people,pys.people)>0?"+":""}${percentChange(ys.people,pys.people).toFixed(1)}%
 
 จุดใช้คนสูงสุด
-${destinations.slice(0,5).map((d,i)=>`${i+1}. ${hotelName(d.hotel)} • ${outletName(d.hotel,d.outlet)} = ${d.people} คน`).join("\\n")}</textarea><button class="btn btn-primary" style="margin-top:10px" data-action="copyLine">คัดลอกข้อความ LINE</button></section>
+${destinations.slice(0,5).map((d,i)=>`${i+1}. ${hotelName(d.hotel)} • ${outletName(d.hotel,d.outlet)} = ${d.people} คน`).join("\\n")}</textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendReportSummaryLine">LINE สรุปรายงาน</button><button class="btn btn-primary" data-action="copyLine">คัดลอกข้อความ LINE</button></div></section>
 </main>`;
 }
 function admin(){
@@ -1465,7 +1592,7 @@ else if(a==="requestTab"){
   const rows=requestTab==="sent"?activeRequestList().filter(x=>x.fromHotel===currentHotel):activeRequestList().filter(x=>x.toHotel===currentHotel);
   const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"ได้คนแล้ว / รอปิดงาน":x.status==="done"?"ปิดงานแล้ว":x.status==="cancelled"?"ยกเลิกคำขอ":"ปิดงาน";
   const cls=x=>x.status==="pending"?"status-pending":x.status==="accepted"?"status-accepted":x.status==="assigned"?"status-assigned":x.status==="cancelled"?"status-pending":"status-done";
-  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทางตามคำขอ</div><div class="name">${hotelName(x.fromHotel)}</div><div class="small">${outletName(x.fromHotel,x.fromOutlet)}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / จุดที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิกคำขอ</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
+  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทางตามคำขอ</div><div class="name">${hotelName(x.fromHotel)}</div><div class="small">${outletName(x.fromHotel,x.fromOutlet)}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / จุดที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิกคำขอ</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
  }
 }
 
@@ -1515,6 +1642,20 @@ else if(a==="demoWorkflow"){
 else if(a==="printReport"){window.print()}
 else if(a==="applyReportPeriod"){window.reportMonth=$("reportMonth").value;window.reportYear=$("reportYear").value;go("reports")}
 else if(a==="reportChartMetric"){window.reportChartMetric=el.dataset.metric||"people";go("reports")}
+
+else if(a==="sendRequestLine"){
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29RequestReport(r),'📋 รายงานคำขอพนักงาน');
+}
+else if(a==="sendAssignmentLine"){
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29AssignmentReport(r),'👥 รายงานจัดคนไปช่วย');
+}
+else if(a==="sendCancelLine"){
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29CancellationReport(r),'❌ รายงานยกเลิกคำขอ');
+}
+else if(a==="sendReportSummaryLine"){v29ShowLinePreview(v29ReportSummary(),'📊 สรุปรายงานผู้บริหาร');}
+else if(a==="sendCurrentLine"){if(window.v29CurrentLineText)await v29ShareLine(window.v29CurrentLineText);}
+else if(a==="copyCurrentLine"){if(window.v29CurrentLineText){try{await navigator.clipboard.writeText(window.v29CurrentLineText);toast('คัดลอกแล้ว','ok')}catch{window.prompt('คัดลอกข้อความ',window.v29CurrentLineText)}}}
+
 else if(a==="copyLine"){try{await navigator.clipboard.writeText($("lineText").value);toast("คัดลอกแล้ว")}catch{toast("คัดลอกอัตโนมัติไม่ได้")}}
  else if(a==="saveRate"){DATA.otRate=+$("a_rate").value||0;toast("อัปเดตเรทแล้ว");render()}
  else if(a==="addRole"){const x=$("a_role").value.trim();if(x&&!DATA.positions.includes(x))DATA.positions.push(x);toast("เพิ่มตำแหน่งแล้ว");render()}
@@ -1559,5 +1700,13 @@ async function bootFNBManpower(){
  render();
 }
 bootFNBManpower();
+</script>
+
+<script id="v29-line-ui-bootstrap">
+document.addEventListener('click', async (e)=>{
+  const b=e.target.closest('[data-action="sendRequestLine"],[data-action="sendAssignmentLine"],[data-action="sendCancelLine"],[data-action="sendReportSummaryLine"]');
+  if(!b)return;
+  // Action handling is centralized in the existing delegated handler.
+});
 </script>
 </body></html>
