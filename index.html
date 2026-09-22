@@ -365,6 +365,7 @@ const DATA={
 // regular shift and a date-specific availability status. The names below are seeded from the
 // uploaded manpower sheet where the text is readable; Admin can edit/add the full roster.
 DATA.employees.forEach(e=>{e.shiftStart=e.shiftStart||"07:00";e.shiftEnd=e.shiftEnd||"16:00";e.breakHours=Number.isFinite(+e.breakHours)?+e.breakHours:1;e.defaultStatus=e.defaultStatus||"working";e.statusByDate=e.statusByDate||{}});
+function attendanceKey(employeeId,date){return `${String(employeeId)}__${String(date)}`;}
 let currentHotel=null,page="select",requestTab="sent";
 const REQUEST_STORE_KEY="baiyoke_fnb_manpower_requests_v13";
 const MOVEMENT_STORE_KEY="baiyoke_fnb_manpower_movements_v13";
@@ -383,8 +384,25 @@ try{
  if(Array.isArray(savedOTRequests)) DATA.otRequests=savedOTRequests;
  const savedEmp=JSON.parse(localStorage.getItem(EMPLOYEE_STORE_KEY)||"null");
  if(Array.isArray(savedEmp)) DATA.employees=savedEmp;
+ const savedAttendance=JSON.parse(localStorage.getItem("baiyoke_fnb_manpower_attendance_v1")||"null");
+ DATA.attendance=(savedAttendance&&typeof savedAttendance==="object"&&!Array.isArray(savedAttendance))?savedAttendance:{};
  storageAvailable=true;
 }catch(e){storageAvailable=false}
+
+// Migrate legacy daily statuses out of Employee Master into separate attendance records.
+function migrateLegacyAttendance(){
+  DATA.attendance=DATA.attendance||{};
+  DATA.employees.forEach(e=>{
+    const legacy=e.statusByDate||{};
+    Object.entries(legacy).forEach(([date,rec])=>{
+      const k=attendanceKey(e.id,date);
+      if(!DATA.attendance[k]) DATA.attendance[k]={id:`ATT-${e.id}-${date}`,employeeId:e.id,date,...(typeof rec==="object"?rec:{status:rec}),updatedAt:Number(e.updatedAt||e.createdAt||Date.now())};
+    });
+    delete e.statusByDate;
+  });
+  localSave("baiyoke_fnb_manpower_attendance_v1",DATA.attendance);
+}
+migrateLegacyAttendance();
 
 /* ===== MULTI-DEVICE CLOUD SYNC — URGENT STABLE MODE =====
    Uses Supabase REST directly with the existing publishable key.
@@ -401,7 +419,7 @@ let CLOUD_STATE={state:'connecting',lastSync:0,error:''};
 let CLOUD_TIMER=null;
 let CLOUD_PUSH_TIMERS={};
 let CLOUD_SNAP={requests:new Map(),movements:new Map(),ots:new Map(),employees:new Map()};
-let CLOUD_BUSY={requests:false,movements:false,ots:false,employees:false,ot_requests:false};
+let CLOUD_BUSY={requests:false,movements:false,ots:false,employees:false,ot_requests:false,attendance:false};
 let CLOUD_OK=false;
 
 function cloudSetStatus(state,error=''){
@@ -586,6 +604,48 @@ function markCloudChanges(bucket,arr){
  }
  CLOUD_SNAP[bucket]=new Map(arr.map(x=>[cloudId(x),cloudFingerprint(x)]));
 }
+function attendanceItems(){return Object.values(DATA.attendance||{});}
+function attendanceLocalMap(){return new Map(attendanceItems().map(x=>[String(x.id||`ATT-${x.employeeId}-${x.date}`),x]));}
+async function cloudSyncAttendance(){
+ if(!navigator.onLine){CLOUD_OK=false;cloudSetStatus("offline","อุปกรณ์ออฟไลน์");return false;}
+ if(CLOUD_BUSY.attendance)return true;
+ CLOUD_BUSY.attendance=true;
+ try{
+   cloudSetStatus("connecting");
+   const rows=await cloudFetch("attendance");
+   const remote=new Map(rows.map(r=>[String(r.item_id),{payload:r.payload,updated_at:r.updated_at}]));
+   const local=attendanceLocalMap();
+   remote.forEach((r,id)=>{
+     const l=local.get(id);
+     if(!l){local.set(id,r.payload);return;}
+     const rt=Date.parse(r.updated_at||"")||Number(r.payload?.updatedAt||r.payload?.createdAt||0);
+     const lt=Number(l.updatedAt||l.createdAt||0);
+     if(rt>lt)local.set(id,r.payload);
+   });
+   DATA.attendance={};
+   local.forEach((x)=>{const k=attendanceKey(x.employeeId,x.date);DATA.attendance[k]=x;});
+   const merged=attendanceItems();
+   const needPush=merged.filter(x=>{
+     const id=String(x.id||`ATT-${x.employeeId}-${x.date}`),rr=remote.get(id);
+     if(!rr)return true;
+     const rt=Date.parse(rr.updated_at||"")||Number(rr.payload?.updatedAt||rr.payload?.createdAt||0);
+     return Number(x.updatedAt||x.createdAt||0)>rt;
+   });
+   if(needPush.length)await cloudUpsert("attendance",needPush);
+   localSave("baiyoke_fnb_manpower_attendance_v1",DATA.attendance);
+   CLOUD_STATE.lastSync=Date.now();CLOUD_OK=true;cloudSetStatus("online");return true;
+ }catch(e){
+   CLOUD_OK=false;CLOUD_STATE.error=String(e?.message||e);cloudSetStatus("offline",CLOUD_STATE.error);console.warn("[F&B Manpower Cloud] attendance",e);return false;
+ }finally{CLOUD_BUSY.attendance=false;}
+}
+async function saveAttendanceRecord(employeeId,date,record){
+ const id=`ATT-${employeeId}-${date}`;
+ DATA.attendance=DATA.attendance||{};
+ DATA.attendance[attendanceKey(employeeId,date)]={id,employeeId,date,...record,updatedAt:Date.now()};
+ localSave("baiyoke_fnb_manpower_attendance_v1",DATA.attendance);
+ try{await cloudSyncAttendance();}catch(e){}
+}
+
 async function cloudFetch(bucket){
  const u=FNB_CLOUD.url+'/rest/v1/'+FNB_CLOUD.table+
    '?select=item_id,payload,updated_at&bucket=eq.'+encodeURIComponent(bucket);
@@ -597,7 +657,7 @@ async function cloudFetch(bucket){
 async function cloudUpsert(bucket,items){
  if(!items.length)return;
  const rows=items.map(x=>({
-   bucket,item_id:cloudId(x),payload:x,
+   bucket,item_id:cloudId(x),payload:(bucket==="employees"?(()=>{const y={...x};delete y.statusByDate;return y})():x),
    updated_at:new Date(Number(x.updatedAt||x.createdAt||Date.now())).toISOString()
  }));
  const u=FNB_CLOUD.url+'/rest/v1/'+FNB_CLOUD.table+'?on_conflict=bucket,item_id';
@@ -695,6 +755,7 @@ async function cloudInitialSync(){
  cloudSetStatus('connecting');
  const results=[];
  for(const b of ['requests','movements','ots','employees','ot_requests'])results.push(await cloudSyncBucket(b));
+ results.push(await cloudSyncAttendance());
  CLOUD_OK=results.every(Boolean);
  if(!CLOUD_OK){
    const err=CLOUD_STATE.error||'Cloud database unavailable';
@@ -715,6 +776,7 @@ async function cloudPoll(){
  await cloudSyncBucket('ots');
  await cloudSyncBucket('employees');
  await cloudSyncBucket('ot_requests');
+ await cloudSyncAttendance();
  if(before!==JSON.stringify(DATA.requests)||beforeEmp!==JSON.stringify(DATA.employees)||beforeMov!==JSON.stringify(DATA.movements)||beforeOT!==JSON.stringify(DATA.ots))render();
 }
 window.addEventListener('online',()=>cloudPoll());
@@ -807,7 +869,8 @@ function dashboard(){
  </main>`;
 }
 function employeeDayRecord(e,date){
- const v=e?.statusByDate?.[date];
+ const ck=attendanceKey(e?.id,date),vCloud=DATA.attendance?.[ck];
+ const v=vCloud!==undefined?vCloud:e?.statusByDate?.[date];
  if(typeof v==='string') return {status:v,type:v==='leave'?'other':null,attendance:null,actualIn:'',actualOut:'',note:''};
  if(v&&typeof v==='object') return {
    status:v.status||'working',
@@ -975,7 +1038,7 @@ function employees(){
  ${liveManpowerBoardHtml(hotel,focusDate)}
  ${v21CanPage('admin')?`<div class="card"><div class="grid-2"><div><label>รหัสพนักงาน</label><input id="e_id" placeholder="BYK00130"></div><div><label>ชื่อ-นามสกุล</label><input id="e_name" placeholder="สมชาย ใจดี"></div><div><label>ตำแหน่ง</label><select id="e_role">${roleOptions()}</select></div><div><label>โรงแรมต้นสังกัด</label><select id="e_hotel"><option value="baiyoke">Baiyoke Sky</option><option value="queensland">Queensland</option></select></div><div><label>ห้องอาหารต้นสังกัด</label><select id="e_outlet">${outletOptions}</select></div><div><label>เวลาเข้างานหลัก</label><input id="e_shiftStart" type="time" value="07:00"></div><div><label>เวลาเลิกงานหลัก</label><input id="e_shiftEnd" type="time" value="16:00"></div><div><label>พัก / Break (ชม.)</label><input id="e_break" type="number" min="0" step="0.5" value="1"></div></div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addEmployee">＋ เพิ่มพนักงานเข้าห้องอาหาร</button></div>`:`<div class="card"><b>📋 Daily Manpower Control</b><div class="small" style="margin-top:4px">บัญชีนี้สามารถปรับสถานะ ทำงาน / หยุด / ลา รายวันได้ แต่การเพิ่ม-ลบพนักงานและแก้ Master ทำได้เฉพาะ Admin</div></div>`}
- <div class="v27-attendance-card"><div class="v27-attendance-head"><div><b style="font-size:17px;color:#194c82">✅ เช็กกำลังคนรายวัน / Daily Attendance</b><div class="small" style="margin-top:4px">เลือกวันย้อนหลัง / วันนี้ / วันล่วงหน้าได้ • วางแผนหยุด/ลาก่อนได้ และบันทึก “มาทำงานจริง” พร้อมเวลาเข้า–ออกเมื่อทราบ</div></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center"><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${focusDate}" style="padding:8px 10px;font-size:10px">LINE สรุปกำลังพล</button></div><span class="v27-attendance-badge actual">Cloud Sync • บันทึกข้ามอุปกรณ์</span></div><div class="v27-attendance-actions"><span class="pill pill-blue">แผนประจำวัน = หยุด / ลา / ทำงาน</span><span class="pill pill-gold">Actual = มาจริง / มาสาย / ไม่มา</span></div><div class="v27-attendance-note">💡 สำหรับวันล่วงหน้า ให้กำหนด “ทำงาน / หยุด / ลา” เป็นแผนไว้ก่อน ส่วน “มาทำงานจริง” ให้เช็กเมื่อถึงวันทำงานจริง ระบบ Workforce จะใช้ข้อมูล Actual ที่บันทึกแล้วเป็นฐาน และถ้ายังไม่มี Actual จะเตือนว่า “ยังไม่เช็ก”</div></div>
+ <div class="v27-attendance-card"><div class="v27-attendance-head"><div><b style="font-size:17px;color:#194c82">✅ เช็กกำลังคนรายวัน / Daily Attendance</b><div class="small" style="margin-top:4px">เลือกวันย้อนหลัง / วันนี้ / วันล่วงหน้าได้ • วางแผนหยุด/ลาก่อนได้ และบันทึก “มาทำงานจริง” พร้อมเวลาเข้า–ออกเมื่อทราบ</div></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center"><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${focusDate}" style="padding:8px 10px;font-size:10px">LINE สรุปกำลังพล</button></div><span class="v27-attendance-badge actual">Cloud Sync • สถานะรายวันแยกซิงก์ข้ามอุปกรณ์</span></div><div class="v27-attendance-actions"><span class="pill pill-blue">แผนประจำวัน = หยุด / ลา / ทำงาน</span><span class="pill pill-gold">Actual = มาจริง / มาสาย / ไม่มา</span></div><div class="v27-attendance-note">💡 สำหรับวันล่วงหน้า ให้กำหนด “ทำงาน / หยุด / ลา” เป็นแผนไว้ก่อน ส่วน “มาทำงานจริง” ให้เช็กเมื่อถึงวันทำงานจริง ระบบ Workforce จะใช้ข้อมูล Actual ที่บันทึกแล้วเป็นฐาน และถ้ายังไม่มี Actual จะเตือนว่า “ยังไม่เช็ก”</div></div>
  <div class="card" style="margin-top:16px"><div class="section-title" style="margin:0"><div><h3>กำลังคนประจำวัน + เช็กมาทำงานจริง</h3><div class="small">กำหนดวัน + ห้องอาหาร แล้วบันทึกแผนและสถานะจริงรายคน: ทำงาน / หยุด / ลา / มาจริง / มาสาย / ไม่มา พร้อมเวลาเข้า–ออกจริง</div></div></div><div class="grid-2" style="margin-top:12px"><div><label>วันที่ (ย้อนหลัง / วันนี้ / ล่วงหน้า)</label><input id="mp_date" type="date" value="${focusDate}"></div><div><label>ห้องอาหาร</label><select id="mp_outlet">${outletOptions}</select></div></div><div id="mp_snapshot" style="margin-top:12px">${manpowerSnapshotHtml(hotel,focusOutlet,focusDate,'สรุปกำลังคน')}</div><div id="mp_people" style="margin-top:12px">${dailyEmployeeRows(hotel,focusOutlet,focusDate)}</div></div>
  <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:900;color:#194c82">📋 เปิด Employee Master ทั้งหมด (${DATA.employees.length} คน)</summary><div style="overflow:auto;margin-top:12px"><table><thead><tr><th>รหัส</th><th>ชื่อ / ตำแหน่ง</th><th>โรงแรม</th><th>ห้องอาหารต้นสังกัด</th><th>เวลาหลัก</th><th>สถานะวันนี้</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">ยังไม่มีรายชื่อ</td></tr>`}</tbody></table></div></details>
  </main>`;
@@ -1636,7 +1699,7 @@ document.addEventListener("click",async e=>{
  else if(a==="addEmployee"){const id=$("e_id").value.trim(),name=$("e_name").value.trim(),role=$("e_role").value,hotel=$("e_hotel").value,outlet=$("e_outlet").value,shiftStart=$("e_shiftStart")?.value||"07:00",shiftEnd=$("e_shiftEnd")?.value||"16:00",breakHours=+($("e_break")?.value||1);if(!id||!name)return toast("กรุณากรอกรหัสและชื่อ");if(DATA.employees.some(x=>x.id===id))return toast("รหัสซ้ำ");DATA.employees.push({id,name,role,hotel,outlet,shiftStart,shiftEnd,breakHours,defaultStatus:"working",statusByDate:{}});saveEmployees();v21Audit('ADD_EMPLOYEE',`${id} • ${name} • ${outletName(hotel,outlet)} • ${shiftStart}-${shiftEnd}`);toast("เพิ่มพนักงานแล้ว");render()}
  else if(a==="delEmployee"){const removed=DATA.employees[+el.dataset.i];DATA.employees.splice(+el.dataset.i,1);saveEmployees();v21Audit('DELETE_EMPLOYEE',removed?.id||'-');render();toast("ลบพนักงานแล้ว")}
 else if(a==="manageOutletRoster"){const h=el.dataset.hotel||currentHotel,o=el.dataset.outlet,d=el.dataset.date||todayISO();if(h!==currentHotel){if(!v21CanHotelSwitch())return toast('บัญชีนี้ไม่มีสิทธิ์สลับไปยังโรงแรมนี้');currentHotel=h;}window.manpowerFocus={hotel:h,outlet:o,date:d};v21Audit('OPEN_MANPOWER_ROSTER',`${hotelName(h)} • ${outletName(h,o)} • ${d}`);go('employees')}
-else if(a==="setEmployeeDayStatus"){const idx=+el.dataset.i,emp=DATA.employees[idx],date=$("mp_date")?.value||todayISO(),status=$("dayStatus_"+idx)?.value||"working",type=$("dayLeave_"+idx)?.value||null,attendance=$("dayAttendance_"+idx)?.value||"",actualIn=$("dayActualIn_"+idx)?.value||"",actualOut=$("dayActualOut_"+idx)?.value||"";if(!emp)return;emp.statusByDate=emp.statusByDate||{};const prev=employeeDayRecord(emp,date);emp.statusByDate[date]={status,type:status==='leave'?type:null,attendance:attendance||null,actualIn:actualIn||'',actualOut:actualOut||'',note:prev.note||''};saveEmployees();v21Audit('UPDATE_DAILY_ATTENDANCE',`${emp.id} • ${date} • plan=${status}${status==='leave'?` • ${leaveTypeLabel(type)}`:''} • actual=${attendanceLabel(attendance||null)} • ${actualIn||'--'}-${actualOut||'--'}`);toast(`บันทึกกำลังคน ${emp.name} แล้ว`);render()}
+else if(a==="setEmployeeDayStatus"){(async()=>{const idx=+el.dataset.i,emp=DATA.employees[idx],date=$("mp_date")?.value||todayISO(),status=$("dayStatus_"+idx)?.value||"working",type=$("dayLeave_"+idx)?.value||null,attendance=$("dayAttendance_"+idx)?.value||"",actualIn=$("dayActualIn_"+idx)?.value||"",actualOut=$("dayActualOut_"+idx)?.value||"";if(!emp)return;const prev=employeeDayRecord(emp,date);await saveAttendanceRecord(emp.id,date,{status,type:status==='leave'?type:null,attendance:attendance||null,actualIn:actualIn||'',actualOut:actualOut||'',note:prev.note||''});v21Audit('UPDATE_DAILY_ATTENDANCE',`${emp.id} • ${date} • plan=${status}${status==='leave'?` • ${leaveTypeLabel(type)}`:''} • actual=${attendanceLabel(attendance||null)} • ${actualIn||'--'}-${actualOut||'--'}`);toast(`${CLOUD_OK?"ซิงก์กำลังคนแล้ว":"บันทึกในเครื่องแล้ว • Cloud ยังไม่พร้อม"} • ${emp.name}`);render();})();}
  else if(a==="addRequest"){
  const requestType=$("r_type_casual")?.checked?'CASUAL':'TRANSFER';
  const rawQty=requestType==='CASUAL'?0:Math.floor(+$("r_qty").value||0);
