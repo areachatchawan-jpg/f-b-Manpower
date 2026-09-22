@@ -291,6 +291,13 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 </style>
 <style id="v30-destination-flow-css">
 .v30-destination-note{padding:10px 12px;border-radius:12px;background:#f6fbff;border:1px dashed #cfe3f3;color:#56718b;font-size:11px;line-height:1.5;margin-top:8px}
+</style>
+<style id="v34-inline-line-css">
+.v34-line-inline{margin-top:12px;padding:12px;border:1px solid #ccefd9;border-radius:14px;background:linear-gradient(135deg,#f7fff9,#effaf4);}
+.v34-line-inline[hidden]{display:none}
+.v34-line-title{font-weight:900;color:#176b45;font-size:12px;margin-bottom:8px}
+.v34-line-preview{white-space:pre-wrap;background:#fff;border:1px dashed #c7dfd0;border-radius:11px;padding:10px;font-size:11px;line-height:1.55;color:#35584a;max-height:320px;overflow:auto}
+.v34-line-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
 </style></head>
 <body>
 <div id="app"></div><div id="v29LinePreviewHost" style="max-width:1180px;margin:0 auto;padding:0 16px 16px"></div><div style="max-width:1180px;margin:0 auto;padding:0 16px"><div style="font-size:10px;color:#6f8498;margin-top:6px">ชื่อสถานที่แสดงแบบทางการ: ชื่อห้องอาหารเต็ม + ชั้น/โซน เพื่อแยกห้องอาหารชื่อเดียวกันให้ชัดเจนรหัสรายการสร้างใหม่ไม่ซ้ำสำหรับการใช้งานหลายผู้ใช้</div></div><div id="toast" class="toast"></div>
@@ -325,7 +332,7 @@ const DATA={
   {id:"BYK00129",name:"ปฐมพร",role:"Steward",hotel:"baiyoke",outlet:"bsr78"},
   {id:"QH00001",name:"สมชาย ทดสอบ",role:"Waiter",hotel:"queensland",outlet:"mums"}
  ],
- requests:[],movements:[],ots:[]
+ requests:[],movements:[],ots:[],otRequests:[]
 };
 
 // V25: employee master follows the manpower sheet structure — each person has a home outlet,
@@ -353,6 +360,7 @@ let currentHotel=null,page="select",requestTab="sent";
 const REQUEST_STORE_KEY="baiyoke_fnb_manpower_requests_v13";
 const MOVEMENT_STORE_KEY="baiyoke_fnb_manpower_movements_v13";
 const OT_STORE_KEY="baiyoke_fnb_manpower_ot_v13";
+const OT_REQUEST_STORE_KEY='fnbManpowerOTRequestsV35';
 const EMPLOYEE_STORE_KEY="baiyoke_fnb_manpower_employees_v25";
 let storageAvailable=false;
 try{
@@ -362,6 +370,8 @@ try{
  if(Array.isArray(savedMov)) DATA.movements=savedMov;
  const savedOT=JSON.parse(localStorage.getItem(OT_STORE_KEY)||"null");
  if(Array.isArray(savedOT)) DATA.ots=savedOT;
+ const savedOTRequests=JSON.parse(localStorage.getItem(OT_REQUEST_STORE_KEY)||"null");
+ if(Array.isArray(savedOTRequests)) DATA.otRequests=savedOTRequests;
  const savedEmp=JSON.parse(localStorage.getItem(EMPLOYEE_STORE_KEY)||"null");
  if(Array.isArray(savedEmp)) DATA.employees=savedEmp;
  storageAvailable=true;
@@ -416,7 +426,7 @@ function v29RequestReport(r){
  const assigned=v29EmployeeNames(assignedCodes);
  const lines=[
   '📋 F&B MANPOWER — คำขอพนักงาน',
-  `Request: ${r.id||'-'}`,
+  `เลขที่ใบขอ: ${r.id||'-'}`,
   `สถานะ: ${v29StatusLabel(r.status)}`,
   `วันที่: ${r.date||'-'}`,
   `เวลา: ${(r.start||'-')} - ${(r.end||'-')}`,
@@ -441,7 +451,7 @@ function v29AssignmentReport(r){
  const moves=v29RequestMovements(r);
  const lines=[
   '👥 F&B MANPOWER — รายงานจัดคนไปช่วย',
-  `Request: ${r.id||'-'}`,
+  `เลขที่ใบขอ: ${r.id||'-'}`,
   `สถานะ: ${v29StatusLabel(r.status)}`,
   `วันที่: ${r.date||'-'}`,
   `ต้นทาง: กำหนดตามพนักงานแต่ละคน`,
@@ -462,7 +472,7 @@ function v29AssignmentReport(r){
 function v29CancellationReport(r){
  return [
   '❌ F&B MANPOWER — ยกเลิกคำขอ',
-  `Request: ${r.id||'-'}`,
+  `เลขที่ใบขอ: ${r.id||'-'}`,
   `วันที่: ${r.date||'-'}`,
   `ต้นทาง: กำหนดตามพนักงานที่จัดจริง`,
   `ปลายทางโรงแรม: ${v29HotelName(r.toHotel)}`,
@@ -499,12 +509,24 @@ async function v29ShareLine(text){
  }
  try{await navigator.clipboard.writeText(text);toast('คัดลอกรายงานแล้ว — เปิด LINE แล้ววางข้อความได้เลย','ok');return true}catch{window.prompt('คัดลอกรายงานไปส่ง LINE',text);return true}
 }
-function v29ShowLinePreview(text,title='รายงาน LINE'){
+function v29ShowLinePreview(text,title='รายงาน LINE',requestId=null){
  const safe=text.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
- const host=document.getElementById('v29LinePreviewHost');
- if(!host)return;
- host.innerHTML=`<div class="v29-line-box"><b>${title}</b><div class="v29-line-preview">${safe}</div><div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap"><button class="v29-line-btn" type="button" data-action="sendCurrentLine">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyCurrentLine">คัดลอกข้อความ</button></div></div>`;
+ const selector=requestId?`[data-line-preview-for="${String(requestId).replace(/"/g,'&quot;')}"]`:null;
+ const inline=selector?document.querySelector(selector):null;
+ if(inline){
+   window.v29LineTexts=window.v29LineTexts||{};
+   if(requestId)window.v29LineTexts[requestId]=text;
+   inline.innerHTML=`<div class="v34-line-title">${title}</div><div class="v34-line-preview">${safe}</div><div class="v34-line-actions"><button class="v29-line-btn" type="button" data-action="sendInlineLine" data-line-id="${requestId||''}">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyInlineLine" data-line-id="${requestId||''}">คัดลอกข้อความ</button></div>`;
+   inline.hidden=false;
+   inline.dataset.active='1';
+   inline.scrollIntoView({behavior:'smooth',block:'nearest'});
+ }else{
+   const host=document.getElementById('v29LinePreviewHost');
+   if(!host)return;
+   host.innerHTML=`<div class="v29-line-box"><b>${title}</b><div class="v29-line-preview">${safe}</div><div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap"><button class="v29-line-btn" type="button" data-action="sendCurrentLine">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyCurrentLine">คัดลอกข้อความ</button></div></div>`;
+ }
  window.v29CurrentLineText=text;
+ window.v29CurrentLineRequestId=requestId||null;
 }
 
 function cloudHeaders(json=false){
@@ -518,6 +540,16 @@ function cloudHeaders(json=false){
 function newRecordId(prefix){
  const rnd=(crypto?.randomUUID?.()||(`${Date.now()}-${Math.random().toString(36).slice(2,10)}`));
  return `${prefix}-${rnd}`;
+}
+function newRequestId(dateStr){
+ const date=(dateStr||todayISO()).replace(/-/g,"");
+ const prefix=`REQ-${date}-`;
+ const used=(Array.isArray(DATA.requests)?DATA.requests:[])
+  .map(r=>String(r?.id||""))
+  .map(id=>{const m=id.match(new RegExp(`^${prefix}(\\d+)$`));return m?Number(m[1]):0})
+  .filter(Number.isFinite);
+ const next=(used.length?Math.max(...used):0)+1;
+ return `${prefix}${String(next).padStart(3,'0')}`;
 }
 function cloudId(x){
  if(x?.id)return String(x.id);
@@ -909,6 +941,13 @@ function employees(){
 }
 
 function inboxPage(){
+ if(window.requestJustCreatedId){
+  const just=DATA.requests.find(x=>x.id===window.requestJustCreatedId);
+  if(just){
+   setTimeout(()=>v29ShowLinePreview(v29RequestReport(just),'✅ สร้างใบขอคนสำเร็จ • ส่ง LINE ได้ทันที',just.id),0);
+   window.requestJustCreatedId=null;
+  }
+ }
  const sent=activeRequestList().filter(x=>((x.createdBy&&x.createdBy===v21CurrentUser?.id)||(!x.createdBy&&x.requesterHotel===currentHotel)||(!x.createdBy&&!x.requesterHotel&&x.fromHotel===currentHotel)));
  const receive=activeRequestList().filter(x=>x.toHotel===currentHotel);
  const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"ได้คนแล้ว / รอปิดงาน":x.status==="done"?"ปิดงานแล้ว":x.status==="cancelled"?"ยกเลิกคำขอ":"ปิดงาน";
@@ -916,7 +955,7 @@ function inboxPage(){
  const card=(x,mode)=>{
    const canAccept=mode==="receive"&&x.status==="pending";
    const canAssign=mode==="receive"&&x.status==="accepted";
-   return `<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div>
+   return `<div class="req-card"><div class="req-head"><div><b>เลขที่ใบขอ: ${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div>
     <div class="req-route"><div class="req-box"><div class="label">ต้นทาง / ผู้ส่งคน</div><div class="name">กำหนดจากพนักงาน</div><div class="small">เลือกได้หลายห้องอาหาร</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">ไม่กำหนดห้องอาหารใน Request</div></div></div>
     <div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>
     <div class="flow"><span class="flow-dot">1</span><span class="flow-label">Request</span><span class="flow-line"></span><span class="flow-dot">2</span><span class="flow-label">Accept</span><span class="flow-line"></span><span class="flow-dot">3</span><span class="flow-label">Assign</span><span class="flow-line"></span><span class="flow-dot">4</span><span class="flow-label">OT / Close</span></div>
@@ -930,6 +969,7 @@ function inboxPage(){
       ${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}
       ${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}
     </div>
+    <div class="v34-line-inline" data-line-preview-for="${x.id}" hidden></div>
    </div>`;
  };
  return `${header()}<main class="page"><button class="btn btn-light" data-action="nav" data-page="dashboard">← Dashboard</button>
@@ -1174,7 +1214,7 @@ function movementPage(){
  const fromOutlet=DATA.hotels[fromHotel]?.outlets?.[0]?.id||"";
 
  return `${header()}<div class="req-card" style="margin:16px 16px 0">
-   <div class="req-head"><div><b>${rq.id}</b><div class="small">${rq.role} • ${serviceRoundLabel(rq.serviceRound)} • ขอ ${rq.qty} คน • คำขอ ${rq.start}-${rq.end} • ผู้อนุมัติ: ${rq.approvedBy||rq.approverName||"-"}</div></div><span class="pill ${statusCls2}">${statusText}</span></div>
+   <div class="req-head"><div><b>เลขที่ใบขอ: ${rq.id}</b><div class="small">${rq.role} • ${serviceRoundLabel(rq.serviceRound)} • ขอ ${rq.qty} คน • คำขอ ${rq.start}-${rq.end} • ผู้อนุมัติ: ${rq.approvedBy||rq.approverName||"-"}</div></div><span class="pill ${statusCls2}">${statusText}</span></div>
    <div class="req-route"><div class="req-box"><div class="label">ต้นทาง / ผู้ส่งคน</div><div class="name">กำหนดตอนจัดคน</div><div class="small">เลือกพนักงานจากหลายห้องอาหารได้</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(toHotel)}</div><div class="small">เลือกพนักงานจากหลายห้องอาหารได้</div></div></div>
    <div class="small" style="margin-top:10px;font-weight:700">คำขอนี้ต้องจัดให้ครบ ${rq.qty} คน • จัดแล้ว ${assignedCount} คน • เหลือ ${remaining} คน • ช่วงช่วย ${rq.start}-${rq.end}</div>${manpowerSnapshotHtml(rq.toHotel,rq.toOutlet||null,rq.date||todayISO(),"กำลังคนปลายทาง / Destination Manpower",rq.start||'15:00',rq.end||'20:00',rq.id)}
  </div>${workforceBoardHtml(rq.date||todayISO(),rq.start||'15:00',rq.end||'20:00',[rq.toHotel,rq.fromHotel].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i),rq.toHotel,rq.toOutlet,rq.id)}
@@ -1503,13 +1543,18 @@ else if(a==="setEmployeeDayStatus"){const idx=+el.dataset.i,emp=DATA.employees[i
  else if(a==="addRequest"){
  const rawQty=Math.floor(+$("r_qty").value||0);
  if(rawQty<1)return toast("กรุณาระบุจำนวนคนอย่างน้อย 1 คน");
- const rq={id:newRecordId("REQ"),status:"pending",createdAt:Date.now(),fromHotel:null,fromOutlet:null,toHotel:$("r_toHotel").value,toOutlet:null,role:$("r_role").value,qty:rawQty,serviceRound:$("r_round").value,date:normalizeISODate($("r_date").value),start:$("r_start").value,end:$("r_end").value,reason:$("r_reason").value,approverName:$("r_approver")?.value?.trim()||"ไม่ระบุ",approvedBy:null,approvedAt:null,assignedCodes:[],createdBy:v21CurrentUser&&v21CurrentUser.id||null,createdByName:v21CurrentUser&&v21CurrentUser.name||null,requesterHotel:currentHotel};
+ const requestDate=normalizeISODate($("r_date").value);
+ const rq={id:newRequestId(requestDate),status:"pending",createdAt:Date.now(),fromHotel:null,fromOutlet:null,toHotel:$("r_toHotel").value,toOutlet:null,role:$("r_role").value,qty:rawQty,serviceRound:$("r_round").value,date:requestDate,start:$("r_start").value,end:$("r_end").value,reason:$("r_reason").value,approverName:$("r_approver")?.value?.trim()||"ไม่ระบุ",approvedBy:null,approvedAt:null,assignedCodes:[],createdBy:v21CurrentUser&&v21CurrentUser.id||null,createdByName:v21CurrentUser&&v21CurrentUser.name||null,requesterHotel:currentHotel};
  DATA.requests.push(rq);
  v21Audit('CREATE_REQUEST',`${rq.id} • ${hotelName(currentHotel)} → ${hotelName(rq.toHotel)} • ${rq.qty} คน`);
  saveRequests();
- window.pendingRequestId=rq.id;
- toast("ส่งคำขอแล้ว • เปิดหน้าจัดคนไปช่วยให้ทันที");
- go("movement");
+ window.pendingRequestId=null;
+ window.requestJustCreatedId=rq.id;
+ const requestText=v29RequestReport(rq);
+ v29ShowLinePreview(requestText,'✅ สร้างใบขอคนสำเร็จ • ส่ง LINE ได้ทันที');
+ requestTab="sent";
+ toast(`สร้างใบขอคน ${rq.id} แล้ว • พร้อมส่ง LINE`,'ok');
+ go("inbox");
 }
  
 else if(a==="clearEmployeeSearch"){const x=document.getElementById("m_empSearch");if(x)x.value="";const m=document.getElementById("m_empAutocomplete");if(m){m.hidden=true;m.innerHTML="";}renderMovementEmployeePicker()}
@@ -1612,7 +1657,7 @@ else if(a==="requestTab"){
   const rows=requestTab==="sent"?activeRequestList().filter(x=>((x.createdBy&&x.createdBy===v21CurrentUser?.id)||(!x.createdBy&&x.requesterHotel===currentHotel)||(!x.createdBy&&!x.requesterHotel&&x.fromHotel===currentHotel))):activeRequestList().filter(x=>x.toHotel===currentHotel);
   const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"ได้คนแล้ว / รอปิดงาน":x.status==="done"?"ปิดงานแล้ว":x.status==="cancelled"?"ยกเลิกคำขอ":"ปิดงาน";
   const cls=x=>x.status==="pending"?"status-pending":x.status==="accepted"?"status-accepted":x.status==="assigned"?"status-assigned":x.status==="cancelled"?"status-pending":"status-done";
-  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทาง</div><div class="name">กำหนดจากพนักงาน</div><div class="small">เลือกได้หลายห้องอาหาร</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">ไม่กำหนดห้องอาหารใน Request</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิกคำขอ</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
+  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>เลขที่ใบขอ: ${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทาง</div><div class="name">กำหนดจากพนักงาน</div><div class="small">เลือกได้หลายห้องอาหาร</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">ไม่กำหนดห้องอาหารใน Request</div></div></div><div><span class="pill pill-blue">${x.role}</span> <span class="pill pill-gold">ขอ ${x.qty} คน</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${requestTab==="receive"&&x.status==="pending"?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}${canCancelRequest(x)?`<button class="btn btn-light v23-delete" data-action="cancelRequest" data-id="${x.id}">ยกเลิกคำขอ</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
  }
 }
 
@@ -1661,15 +1706,17 @@ else if(a==="applyReportPeriod"){window.reportMonth=$("reportMonth").value;windo
 else if(a==="reportChartMetric"){window.reportChartMetric=el.dataset.metric||"people";go("reports")}
 
 else if(a==="sendRequestLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29RequestReport(r),'📋 รายงานคำขอพนักงาน');
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29RequestReport(r),'📋 รายงานคำขอพนักงาน',r.id);
 }
 else if(a==="sendAssignmentLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29AssignmentReport(r),'👥 รายงานจัดคนไปช่วย');
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29AssignmentReport(r),'👥 รายงานจัดคนไปช่วย',r.id);
 }
 else if(a==="sendCancelLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29CancellationReport(r),'❌ รายงานยกเลิกคำขอ');
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29CancellationReport(r),'❌ รายงานยกเลิกคำขอ',r.id);
 }
 else if(a==="sendReportSummaryLine"){v29ShowLinePreview(v29ReportSummary(),'📊 สรุปรายงานผู้บริหาร');}
+else if(a==="sendInlineLine"){const txt=window.v29LineTexts?.[el.dataset.lineId];if(txt)await v29ShareLine(txt);}
+else if(a==="copyInlineLine"){const txt=window.v29LineTexts?.[el.dataset.lineId];if(txt){try{await navigator.clipboard.writeText(txt);toast('คัดลอกแล้ว','ok')}catch{window.prompt('คัดลอกข้อความ',txt)}}}
 else if(a==="sendCurrentLine"){if(window.v29CurrentLineText)await v29ShareLine(window.v29CurrentLineText);}
 else if(a==="copyCurrentLine"){if(window.v29CurrentLineText){try{await navigator.clipboard.writeText(window.v29CurrentLineText);toast('คัดลอกแล้ว','ok')}catch{window.prompt('คัดลอกข้อความ',window.v29CurrentLineText)}}}
 
@@ -1719,9 +1766,160 @@ bootFNBManpower();
 
 <script id="v29-line-ui-bootstrap">
 document.addEventListener('click', async (e)=>{
-  const b=e.target.closest('[data-action="sendRequestLine"],[data-action="sendAssignmentLine"],[data-action="sendCancelLine"],[data-action="sendReportSummaryLine"]');
+  const b=e.target.closest('[data-action="sendRequestLine"],[data-action="sendAssignmentLine"],[data-action="sendCancelLine"],[data-action="sendReportSummaryLine"],[data-action="sendInlineLine"],[data-action="copyInlineLine"]');
   if(!b)return;
   // Action handling is centralized in the existing delegated handler.
 });
+</script>
+
+<style id="v35-ot-form-css">
+.ot-v35-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}.ot-v35-tabs .btn{min-height:44px}
+.ot-v35-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.ot-v35-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ot-v35-span2{grid-column:1/-1}
+.ot-v35-section-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin:18px 0 10px}.ot-job-card{border:1px solid #d7e6f3;border-radius:18px;padding:14px;background:linear-gradient(135deg,#fff,#f6fbff);margin-bottom:12px}.ot-job-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.ot-v35-job-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.ot-request-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ot-request-box{padding:12px;border:1px solid #dbe8f3;border-radius:14px;background:#fff}.ot-v35-people{margin-top:12px;padding-top:12px;border-top:1px dashed #d7e6f3}.ot-v35-people-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.ot-person-row{display:grid;grid-template-columns:1.5fr .7fr .8fr .8fr .8fr auto;gap:7px;align-items:end;margin-top:8px}.ot-v35-totalbar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.ot-v35-totalbar>div{padding:13px;border:1px solid #dce8f3;border-radius:14px;background:#fff}.ot-v35-totalbar span{display:block;font-size:11px;color:#72869b}.ot-v35-totalbar b{font-size:20px;color:#194c82}.ot-v35-totalbar .grand{background:linear-gradient(135deg,#eef7ff,#fff8e8)}.ot-v35-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.ot-v35-kpis{display:flex;gap:8px;flex-wrap:wrap}.ot-v35-kpis span{border:1px solid #d7e6f3;border-radius:999px;background:#f7fbff;padding:6px 9px;font-size:11px;font-weight:800;color:#355e7f}
+.ot-print-host{display:none}.ot-print-sheet{font-family:"Tahoma","Leelawadee UI",Arial,sans-serif;color:#111;background:#fff;font-size:10.5px;line-height:1.35}.ot-print-brand{display:grid;grid-template-columns:76px 1fr 110px;gap:10px;align-items:center;border-bottom:1px solid #222;padding-bottom:5px;margin-bottom:5px}.ot-print-brand img{width:68px;height:52px;object-fit:contain;display:block}.ot-print-brand-sub{font-size:10px;color:#555;margin-top:2px}.ot-print-title{text-align:center;font-size:18px;letter-spacing:.04em;margin-bottom:2px}.ot-print-date{text-align:right;font-size:11px;margin-bottom:0}.ot-print-dept{font-size:12px;font-weight:700;margin-bottom:5px}.ot-print-head-grid{display:grid;grid-template-columns:1.6fr .8fr;gap:12px;font-size:10.5px;line-height:1.6}.ot-print-reason{margin:5px 0 7px;text-align:left}.ot-print-table{width:98%;margin:0 auto;border-collapse:collapse;table-layout:fixed;font-size:7.9px}.ot-print-table th,.ot-print-table td{border:1px solid #333;padding:3px 3px;vertical-align:top;overflow-wrap:anywhere;word-break:normal}.ot-print-table th{background:#f5f5f5;font-weight:700;text-align:center}.ot-print-table th:nth-child(1){width:21%}.ot-print-table th:nth-child(2){width:10%}.ot-print-table th:nth-child(3){width:9%}.ot-print-table th:nth-child(4){width:6%}.ot-print-table th:nth-child(5){width:13%}.ot-print-table th:nth-child(6){width:6%}.ot-print-table th:nth-child(7){width:6%}.ot-print-table th:nth-child(8){width:6%}.ot-print-table th:nth-child(9){width:7%}.ot-print-table th:nth-child(10){width:8%}.ot-print-table th:nth-child(11){width:8%}.ot-print-table .job-start{page-break-inside:avoid}.ot-print-summary{margin-top:7px;display:grid;gap:2px;width:50%;margin-left:auto}.ot-print-summary>div{display:flex;justify-content:space-between}.ot-print-summary .total{border-top:1.5px solid #222;padding-top:3px;font-weight:800;font-size:12px}.ot-print-notes{margin-top:8px}.ot-print-approval{margin-top:10px}.ot-print-sign-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:30px;text-align:center;font-size:10px}
+@media(max-width:760px){.ot-v35-grid,.ot-request-grid{grid-template-columns:1fr}.ot-v35-job-grid{grid-template-columns:1fr 1fr}.ot-person-row{grid-template-columns:1fr 1fr}.ot-person-row button{grid-column:1/-1}.ot-v35-totalbar{grid-template-columns:1fr}.ot-v35-head,.ot-v35-section-head{flex-direction:column}.ot-v35-span2{grid-column:auto}}
+@media print{body.printing-ot>*{display:none!important}body.printing-ot #otV35PrintHost{display:block!important;position:static!important}body.printing-ot #otV35PrintHost .ot-print-sheet{display:block!important}.ot-print-sheet{page-break-after:auto}@page{size:A4 landscape;margin:7mm 6mm}}
+</style>
+<script id="v35-ot-module">
+function otPage(){
+ const forms=Array.isArray(DATA.otRequests)?DATA.otRequests:[];
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const totalOT=forms.reduce((a,f)=>a+Number(f.totals?.otAmount||0),0);
+ const totalCas=forms.reduce((a,f)=>a+Number(f.totals?.casualAmount||0),0);
+ const total=forms.reduce((a,f)=>a+Number(f.totals?.grandTotal||0),0);
+ return `${header()}<main class="page">
+ <div class="section-title"><div><h2>OT Management</h2><div class="small">บันทึก OT รายคน + ใบขออนุมัติ OT / Casual แบบเอกสาร MEMORANDUM</div></div><button class="btn btn-light" data-action="nav" data-page="dashboard">← Dashboard</button></div>
+ <div class="ot-v35-tabs"><button class="btn ${window.otV35Tab!=='manual'?'btn-primary':'btn-light'}" data-action="otTab" data-tab="request">📄 สร้างใบขออนุมัติ OT</button><button class="btn ${window.otV35Tab==='manual'?'btn-primary':'btn-light'}" data-action="otTab" data-tab="manual">⏱ บันทึก OT รายคน</button></div>
+ ${window.otV35Tab==='manual'?`<section class="card"><div class="section-title" style="margin-top:0"><div><h3>บันทึก OT รายคน</h3><div class="small">ข้อมูลนี้ใช้สำหรับรายงาน OT / ค่าใช้จ่ายจริง</div></div></div>
+ <div class="grid-2"><div><label>พนักงาน</label><select id="o_emp">${DATA.employees.map((e,i)=>`<option value="${i}">${esc(e.id)} — ${esc(e.name)}</option>`).join("")}</select></div><div><label>ประเภท OT</label><select id="o_type"><option>Owner OT</option><option>Helper OT</option></select></div><div><label>วันที่</label><input id="o_date" type="date" value="${todayISO()}"></div><div><label>เรท / ชั่วโมง</label><input id="o_rate" type="number" value="${DATA.otRate}" min="0"></div><div><label>เวลาเริ่ม</label><input id="o_start" type="time" value="09:00"></div><div><label>เวลาจบ</label><input id="o_end" type="time" value="15:00"></div></div>
+ <div style="margin-top:14px;padding:14px;border-radius:14px;background:#eef7ff"><b>คำนวณ</b> <span id="otCalc">6.00 ชม. × ${DATA.otRate} = ${money(6*DATA.otRate)}</span></div>
+ <div style="margin-top:12px"><label>หมายเหตุ</label><textarea id="o_note"></textarea></div><button class="btn btn-primary" style="margin-top:14px" data-action="addOT">บันทึก OT</button></section>
+ <section class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>พนักงาน</th><th>ประเภท</th><th>วันที่</th><th>เวลา</th><th>ชั่วโมง</th><th>เรท</th><th>เงิน</th><th>หมายเหตุ</th></tr></thead><tbody>${DATA.ots.map(x=>`<tr><td><b>${esc(x.name||'-')}</b><br>รหัส ${esc(x.code||'-')}</td><td>${esc(x.type||'-')}</td><td>${esc(x.date||'-')}</td><td>${esc(x.start||'-')}-${esc(x.end||'-')}</td><td>${Number(x.hours||0).toFixed(2)}</td><td>${money(x.rate||0)}</td><td><b>${money(Number(x.hours||0)*Number(x.rate||0))}</b></td><td>${esc(x.note||'-')}</td></tr>`).join("")||`<tr><td colspan="8" class="empty">ยังไม่มี OT</td></tr>`}</tbody></table></section>`:
+ `<section class="ot-v35-builder card">
+   <div class="ot-v35-head"><div><div class="eyebrow">OT APPROVAL DOCUMENT</div><h3 style="margin:5px 0 4px">สร้างใบขออนุมัติ O.T. / Casual</h3><div class="small">ออกแบบตามแบบ MEMORANDUM ที่ส่งมา • 1 ใบรองรับหลายงาน</div></div><button class="btn btn-light" data-action="otResetDraft">เริ่มใบใหม่</button></div>
+   <div class="ot-v35-grid">
+    <div><label>วันที่เอกสาร</label><input id="otf_date" type="date" value="${todayISO()}"></div>
+    <div><label>โรงแรม / หน่วยงาน</label><select id="otf_hotel">${Object.keys(DATA.hotels).map(h=>`<option value="${h}">${esc(hotelName(h))}</option>`).join('')}</select></div>
+    <div><label>เรียน / To</label><input id="otf_to" placeholder="เช่น คุณกิ่งทอง ใบหยก"></div>
+    <div><label>ผู้จัดทำ / From</label><input id="otf_from" value="${esc(window.v21CurrentUser?.name||'')}" placeholder="ชื่อผู้จัดทำ"></div>
+    <div class="ot-v35-span2"><label>สำเนาเรียน / CC</label><input id="otf_cc" placeholder="เช่น ฝ่ายทรัพยากรบุคคล, F&B Manager"></div>
+    <div class="ot-v35-span2"><label>หัวข้อ / Subject</label><input id="otf_subject" value="ขออนุมัติจ้าง O.T. พนักงาน และ Casual ประจำห้องอาหาร"></div>
+    <div class="ot-v35-span2"><label>เหตุผลและความจำเป็น</label><textarea id="otf_reason" rows="4" placeholder="อธิบายจำนวนลูกค้า / ภาระงาน / บุคลากรไม่เพียงพอ / เหตุผลที่ต้องจ้าง OT หรือ Casual"></textarea></div>
+    <div class="ot-v35-span2"><label>หมายเหตุภาพรวมกำลังคน</label><textarea id="otf_manpower" rows="3" placeholder="เช่น พนง.ประจำ 6 ราย: QL 2 ราย / Sky 3 ราย / Day Off 1 ราย"></textarea></div>
+   </div>
+
+   <div class="ot-v35-section-head"><div><h4>รายการงานที่ต้องขอ OT / Casual</h4><div class="small">แบ่งเป็นงานได้หลายงาน เช่น งานประชุม, Lunch, Dinner, Banquet, Set up / เก็บงาน</div></div><button class="btn btn-primary" data-action="otAddJob">+ เพิ่มงาน</button></div>
+   <div id="otJobList"></div>
+   <div class="ot-v35-totalbar" id="otFormTotals"></div>
+   <div class="ot-v35-actions"><button class="btn btn-primary" data-action="otSaveRequest">💾 บันทึกใบขอ OT</button><button class="btn btn-light" data-action="otPreviewDraft">👁 ดูเอกสาร</button></div>
+ </section>
+ <section class="card" style="margin-top:16px"><div class="section-title" style="margin-top:0"><div><h3>เอกสาร OT ที่บันทึกไว้</h3><div class="small">เก็บเลขที่ใบ, งาน, จำนวนคน, ค่าใช้จ่าย และพิมพ์ PDF ย้อนหลังได้</div></div><div class="ot-v35-kpis"><span>OT ${money(totalOT)}</span><span>Casual ${money(totalCas)}</span><span>Total ${money(total)}</span></div></div>
+   <div class="report-table-wrap"><table><thead><tr><th>เลขที่ใบ</th><th>วันที่</th><th>โรงแรม</th><th>งาน</th><th>OT</th><th>Casual</th><th>รวม</th><th>สถานะ</th><th></th></tr></thead><tbody>${forms.map(f=>`<tr><td><b>${esc(f.id)}</b></td><td>${esc(f.date)}</td><td>${esc(hotelName(f.hotel))}</td><td>${esc((f.jobs||[]).map(j=>j.name).join(' / ')||'-')}</td><td>${money(f.totals?.otAmount||0)}</td><td>${money(f.totals?.casualAmount||0)}</td><td><b>${money(f.totals?.grandTotal||0)}</b></td><td><span class="pill ${f.status==='approved'?'status-assigned':'status-pending'}">${f.status==='approved'?'อนุมัติแล้ว':'รออนุมัติ'}</span></td><td><button class="btn btn-light" data-action="otPrint" data-id="${esc(f.id)}">พิมพ์ PDF</button></td></tr>`).join('')||`<tr><td colspan="9" class="empty">ยังไม่มีใบขอ OT</td></tr>`}</tbody></table></div>
+ </section>`}
+ </main>`;
+}
+
+function otV35NewJob(){return {id:'JOB-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),name:'',venue:'',criteria:'',start:'09:00',end:'18:00',detail:'',guests:'',setupGuests:'',requiredStaff:0,existingStaff:0,otPeople:0,otHours:0,otRate:DATA.otRate,casualPeople:0,casualHours:10,casualRate:50,employees:[]};}
+function otV35Draft(){return window.otV35Draft||(window.otV35Draft={jobs:[otV35NewJob()]});}
+function otV35RenderJobs(){
+ const draft=otV35Draft(); const root=document.getElementById('otJobList'); if(!root)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ root.innerHTML=draft.jobs.map((j,idx)=>{const h=hours(j.start,j.end);const otAmt=Number(j.otPeople||0)*Number(j.otHours||0)*Number(j.otRate||0);const casAmt=Number(j.casualPeople||0)*Number(j.casualHours||0)*Number(j.casualRate||0);const shortage=Math.max(0,Number(j.requiredStaff||0)-Number(j.existingStaff||0));
+ return `<div class="ot-job-card"><div class="ot-job-head"><div><span class="pill pill-blue">งาน ${idx+1}</span><b>${esc(j.name||'ยังไม่ได้ระบุชื่องาน')}</b></div>${draft.jobs.length>1?`<button class="btn btn-light v23-delete" data-action="otRemoveJob" data-index="${idx}">ลบงาน</button>`:''}</div>
+ <div class="ot-v35-job-grid">
+  <div class="ot-v35-span2"><label>ชื่องาน</label><input data-ot-j="name" data-index="${idx}" value="${esc(j.name)}" placeholder="เช่น งานประชุม สำนักงบประมาณ"></div>
+  <div class="ot-v35-span2"><label>สถานที่ / ห้อง</label><input data-ot-j="venue" data-index="${idx}" value="${esc(j.venue)}" placeholder="เช่น Diamond Dome 1 ชั้น 22 เวลา 08.00-17.00 น."></div>
+  <div><label>เกณฑ์ / รูปแบบงาน</label><input data-ot-j="criteria" data-index="${idx}" value="${esc(j.criteria)}" placeholder="งานประชุม / Buffet / ลูกค้า 25 : พนง. 1"></div>
+  <div><label>ลูกค้า</label><input data-ot-j="guests" data-index="${idx}" value="${esc(j.guests)}" placeholder="70 ท่าน"></div>
+  <div><label>Set up</label><input data-ot-j="setupGuests" data-index="${idx}" value="${esc(j.setupGuests)}" placeholder="80 ท่าน"></div>
+  <div><label>เวลาเริ่ม</label><input data-ot-j="start" type="time" data-index="${idx}" value="${esc(j.start)}"></div>
+  <div><label>เวลาเลิก</label><input data-ot-j="end" type="time" data-index="${idx}" value="${esc(j.end)}"></div>
+  <div><label>รายละเอียดงาน</label><input data-ot-j="detail" data-index="${idx}" value="${esc(j.detail)}" placeholder="เตรียมงาน + ดูแลภายในงาน + เก็บงาน"></div>
+  <div><label>ต้องใช้ (คน)</label><input data-ot-j="requiredStaff" type="number" min="0" data-index="${idx}" value="${Number(j.requiredStaff||0)}"></div>
+  <div><label>มีอยู่ (คน)</label><input data-ot-j="existingStaff" type="number" min="0" data-index="${idx}" value="${Number(j.existingStaff||0)}"></div>
+  <div><label>ขาดอยู่</label><input value="${shortage}" readonly></div>
+ </div>
+ <div class="ot-request-grid"><div class="ot-request-box"><b>O.T.</b><div class="grid-2" style="margin-top:8px"><div><label>จำนวนคน</label><input data-ot-j="otPeople" type="number" min="0" data-index="${idx}" value="${Number(j.otPeople||0)}"></div><div><label>ชั่วโมง / ราย</label><input data-ot-j="otHours" type="number" min="0" step="0.25" data-index="${idx}" value="${Number(j.otHours||h||0)}"></div><div><label>เรท / ชม.</label><input data-ot-j="otRate" type="number" min="0" data-index="${idx}" value="${Number(j.otRate||DATA.otRate)}"></div><div><label>เป็นเงิน</label><input value="${money(otAmt)}" readonly></div></div></div>
+ <div class="ot-request-box"><b>Casual</b><div class="grid-2" style="margin-top:8px"><div><label>จำนวนคน</label><input data-ot-j="casualPeople" type="number" min="0" data-index="${idx}" value="${Number(j.casualPeople||0)}"></div><div><label>ชั่วโมง / ราย</label><input data-ot-j="casualHours" type="number" min="0" step="0.25" data-index="${idx}" value="${Number(j.casualHours||10)}"></div><div><label>เรท / ชม.</label><input data-ot-j="casualRate" type="number" min="0" data-index="${idx}" value="${Number(j.casualRate||50)}"></div><div><label>เป็นเงิน</label><input value="${money(casAmt)}" readonly></div></div></div></div>
+ <div class="ot-v35-people"><div class="ot-v35-people-head"><div><b>รายละเอียดพนักงาน (ถ้าระบุรายชื่อแล้ว)</b><div class="small">เลือกจาก Employee Master ได้ หรือกรอกข้อมูลเพิ่มภายหลัง</div></div><button class="btn btn-light" data-action="otAddPerson" data-index="${idx}">+ เพิ่มพนักงาน</button></div>${(j.employees||[]).map((p,pi)=>`<div class="ot-person-row"><select data-ot-p="emp" data-index="${idx}" data-pindex="${pi}"><option value="">-- เลือกพนักงาน --</option>${DATA.employees.map(e=>`<option value="${esc(e.id)}" ${e.id===p.code?'selected':''}>${esc(e.id)} — ${esc(e.name)}</option>`).join('')}</select><select data-ot-p="type" data-index="${idx}" data-pindex="${pi}"><option ${p.type==='OT'?'selected':''}>OT</option><option ${p.type==='Casual'?'selected':''}>Casual</option></select><input data-ot-p="start" type="time" data-index="${idx}" data-pindex="${pi}" value="${esc(p.start||j.start)}"><input data-ot-p="end" type="time" data-index="${idx}" data-pindex="${pi}" value="${esc(p.end||j.end)}"><input data-ot-p="rate" type="number" min="0" data-index="${idx}" data-pindex="${pi}" value="${Number(p.rate||DATA.otRate)}"><button class="btn btn-light v23-delete" data-action="otRemovePerson" data-index="${idx}" data-pindex="${pi}">ลบ</button></div>`).join('')||'<div class="empty">ยังไม่ได้ระบุรายชื่อพนักงาน</div>'}</div>
+ </div>`}).join('');
+ otV35UpdateTotals();
+}
+function otV35UpdateTotals(){
+ const d=otV35Draft(); let ot=0,cas=0;
+ d.jobs.forEach(j=>{ot+=Number(j.otPeople||0)*Number(j.otHours||0)*Number(j.otRate||0);cas+=Number(j.casualPeople||0)*Number(j.casualHours||0)*Number(j.casualRate||0)});
+ const root=document.getElementById('otFormTotals');if(root)root.innerHTML=`<div><span>O.T.</span><b>${money(ot)}</b></div><div><span>Casual</span><b>${money(cas)}</b></div><div class="grand"><span>Total</span><b>${money(ot+cas)}</b></div>`;
+}
+function otV35CollectHeader(){return {date:$('otf_date')?.value||todayISO(),hotel:$('otf_hotel')?.value||currentHotel,to:$('otf_to')?.value?.trim()||'',from:$('otf_from')?.value?.trim()||'',cc:$('otf_cc')?.value?.trim()||'',subject:$('otf_subject')?.value?.trim()||'ขออนุมัติจ้าง O.T. พนักงาน และ Casual ประจำห้องอาหาร',reason:$('otf_reason')?.value||'',manpowerNote:$('otf_manpower')?.value||''};}
+function otV35CollectDraft(){
+ const d=otV35Draft();
+ document.querySelectorAll('[data-ot-j]').forEach(el=>{const i=+el.dataset.index,key=el.dataset.otJ;if(!d.jobs[i])return;d.jobs[i][key]=['requiredStaff','existingStaff','otPeople','otHours','otRate','casualPeople','casualHours','casualRate'].includes(key)?Number(el.value||0):el.value});
+ document.querySelectorAll('[data-ot-p]').forEach(el=>{const i=+el.dataset.index,p=+el.dataset.pindex,j=d.jobs[i];if(!j||!j.employees?.[p])return;const k=el.dataset.otP;j.employees[p][k]=k==='rate'?Number(el.value||0):el.value;if(k==='emp'){const e=DATA.employees.find(x=>x.id===el.value);if(e){j.employees[p].code=e.id;j.employees[p].name=e.name;j.employees[p].hotel=e.hotel;j.employees[p].outlet=e.outlet;}}});
+ d.jobs.forEach(j=>{if(!j.name)j.name='งานไม่ระบุ';j.shortage=Math.max(0,Number(j.requiredStaff||0)-Number(j.existingStaff||0));j.hours=hours(j.start,j.end)});
+ return {header:otV35CollectHeader(),jobs:d.jobs};
+}
+function otV35Totals(data){let otPeople=0,casPeople=0,otAmount=0,casualAmount=0;for(const j of data.jobs||[]){otPeople+=Number(j.otPeople||0);casPeople+=Number(j.casualPeople||0);otAmount+=Number(j.otPeople||0)*Number(j.otHours||0)*Number(j.otRate||0);casualAmount+=Number(j.casualPeople||0)*Number(j.casualHours||0)*Number(j.casualRate||0)}return {otPeople,casualPeople:casPeople,otAmount,casualAmount,grandTotal:otAmount+casualAmount};}
+function otV35NewId(dateStr){const date=(dateStr||todayISO()).replace(/-/g,'');const pre=`OTREQ-${date}-`;const used=(DATA.otRequests||[]).map(x=>String(x.id||'')).map(id=>{const m=id.match(new RegExp(`^${pre}(\\d+)$`));return m?Number(m[1]):0}).filter(Number.isFinite);return `${pre}${String((used.length?Math.max(...used):0)+1).padStart(3,'0')}`;}
+function otV35SaveLocal(rec){DATA.otRequests=Array.isArray(DATA.otRequests)?DATA.otRequests:[];DATA.otRequests.unshift(rec);localStorage.setItem(OT_REQUEST_STORE_KEY,JSON.stringify(DATA.otRequests));}
+function otV35Esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function otV35PrintHtml(f){
+ const d=f, esc=otV35Esc, totals=d.totals||otV35Totals(d);
+ const printLogo=LOGOS[d.hotel]||LOGOS.baiyoke;
+ const printHotel=hotelName(d.hotel);
+ let rows='';
+ (d.jobs||[]).forEach((j,i)=>{
+  const otAmt=Number(j.otPeople||0)*Number(j.otHours||0)*Number(j.otRate||0),casAmt=Number(j.casualPeople||0)*Number(j.casualHours||0)*Number(j.casualRate||0);
+  const peopleHtml=(j.employees||[]).map(p=>`${esc(p.name||p.code||'-')} (${esc(p.code||'-')})`).join('<br>')||'-';
+  rows+=`<tr class="job-start"><td><b>${i+1}. ${esc(j.name)}</b><br>${esc(j.venue||'')}<br>${j.guests?`ลูกค้า: ${esc(j.guests)}`:''}${j.setupGuests?` (Set up ${esc(j.setupGuests)})`:''}<br>${peopleHtml}</td><td>${esc(j.criteria||'-')}</td><td>${esc(j.start||'-')} - ${esc(j.end||'-')}</td><td>${Number(j.hours||hours(j.start,j.end)).toFixed(2)} ชม.</td><td>${esc(j.detail||'-')}</td><td>${Number(j.requiredStaff||0)}</td><td>${Number(j.existingStaff||0)}</td><td>${Number(j.shortage||0)||'-'}</td><td><b>OT ${Number(j.otPeople||0)}</b><br>Casual ${Number(j.casualPeople||0)}</td><td>${j.otPeople?`${Number(j.otHours||0)} ชม. × ${money(j.otRate||0)}<br>=${money(otAmt)}`:''}${j.casualPeople?`<br>Casual ${Number(j.casualHours||0)} ชม. × ${money(j.casualRate||0)}<br>=${money(casAmt)}`:''}</td><td><b>${money(otAmt+casAmt)}</b></td></tr>`;
+ });
+ const html=`<div class="ot-print-sheet"><div class="ot-print-brand"><img src="${printLogo}" alt="${esc(printHotel)}"><div><div class="ot-print-title">MEMORANDUM</div><div class="ot-print-brand-sub">${esc(printHotel)}</div></div><div class="ot-print-date">${esc(d.date)}</div></div><div class="ot-print-dept">Food & Beverage Department</div><div class="ot-print-head-grid"><div><b>To</b> : ${esc(d.to||'-')}<br><b>Subject</b> : ${esc(d.subject||'-')}<br><b>สำเนาเรียน</b> : ${esc(d.cc||'-')}</div><div><b>From</b> : ${esc(d.from||'-')}</div></div><div class="ot-print-reason">เนื่องด้วยวันที่ ${esc(d.date)} ในส่วนของงานอาหารและเครื่องดื่มมีภาระงานตามรายการด้านล่าง จึงมีความจำเป็นต้องขอจ้าง O.T. พนักงาน และ/หรือ Casual ชั่วคราว เพื่อให้การบริการและการดำเนินงานเป็นไปด้วยดี รายละเอียดและจำนวนค่าใช้จ่ายเป็นไปตามตารางนี้<br>${esc(d.reason||'')}</div><table class="ot-print-table"><thead><tr><th>รายการ</th><th>เกณฑ์.</th><th>เวลา.</th><th>จำนวนชม.</th><th>รายละเอียด</th><th>จำนวนพนักงานที่ต้องใช้</th><th>ที่มีอยู่</th><th>ที่ขาดอยู่</th><th>ขอจ้าง</th><th>จำนวนชั่วโมง/ราย</th><th>เป็นเงิน</th></tr></thead><tbody>${rows||'<tr><td colspan="11">ไม่มีรายการงาน</td></tr>'}</tbody></table><div class="ot-print-summary"><b>สรุป</b><div>ข้อพิจารณา O.T. จำนวน ${totals.otPeople} คน <span>เป็นเงิน ${money(totals.otAmount)}</span></div><div>ข้อพิจารณา Casual จำนวน ${totals.casualPeople} คน <span>เป็นเงิน ${money(totals.casualAmount)}</span></div><div class="total">Total <span>${money(totals.grandTotal)}</span></div></div><div class="ot-print-notes">* Casual จ้างตามจำนวนชั่วโมงและอัตราที่ระบุในแต่ละงาน<br>* O.T. ใช้อัตราตามที่ระบุในแต่ละงาน<br>${esc(d.manpowerNote||'')}</div><div class="ot-print-approval">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ<div class="ot-print-sign-grid"><div>ลงชื่อ ........................................................<br>ผู้จัดทำ / Restaurant Manager</div><div>ลงชื่อ ........................................................<br>ผู้อนุมัติ</div></div></div></div>`;
+ return html;
+}
+function otV35ShowPrint(id){const f=(DATA.otRequests||[]).find(x=>x.id===id)||window.otV35DraftSaved;if(!f)return toast('ไม่พบใบขอ OT');let host=document.getElementById('otV35PrintHost');if(!host){host=document.createElement('div');host.id='otV35PrintHost';document.body.appendChild(host)}host.innerHTML=otV35PrintHtml(f);host.className='ot-print-host';document.body.classList.add('printing-ot');setTimeout(()=>{window.print();setTimeout(()=>{host.innerHTML='';document.body.classList.remove('printing-ot')},500)},50);}
+function otV35Init(){if(!Array.isArray(DATA.otRequests)){DATA.otRequests=[];try{const x=JSON.parse(localStorage.getItem(OT_REQUEST_STORE_KEY)||'null');if(Array.isArray(x))DATA.otRequests=x}catch(e){}}if(!window.otV35Draft)window.otV35Draft={jobs:[otV35NewJob()]};}
+otV35Init();
+
+// Override old OT page with V35 version.
+window.otPage=otPage;
+
+// V35 delegated interactions.
+document.addEventListener('click', async e=>{
+ const el=e.target.closest('[data-action]'); if(!el)return; const a=el.dataset.action;
+ if(a==='otTab'){window.otV35Tab=el.dataset.tab;render();return}
+ if(a==='otResetDraft'){window.otV35Draft={jobs:[otV35NewJob()]};render();return}
+ if(a==='otAddJob'){otV35CollectDraft();otV35Draft().jobs.push(otV35NewJob());render();return}
+ if(a==='otRemoveJob'){const i=+el.dataset.index;otV35CollectDraft();otV35Draft().jobs.splice(i,1);if(!otV35Draft().jobs.length)otV35Draft().jobs.push(otV35NewJob());render();return}
+ if(a==='otAddPerson'){otV35CollectDraft();const j=otV35Draft().jobs[+el.dataset.index];j.employees.push({code:'',name:'',type:'OT',start:j.start,end:j.end,rate:DATA.otRate});render();return}
+ if(a==='otRemovePerson'){otV35CollectDraft();otV35Draft().jobs[+el.dataset.index].employees.splice(+el.dataset.pindex,1);render();return}
+ if(a==='otSaveRequest'){
+   const data=otV35CollectDraft(); if(!data.jobs.some(j=>j.name))return toast('กรุณาระบุชื่องานอย่างน้อย 1 งาน');
+   const rec={id:otV35NewId(data.header.date),...data,status:'pending',createdAt:Date.now(),createdBy:v21CurrentUser?.id||null,createdByName:v21CurrentUser?.name||null,totals:otV35Totals(data)};
+   otV35SaveLocal(rec);window.otV35LastId=rec.id;window.otV35DraftSaved=rec;toast(`บันทึกใบขอ OT ${rec.id} แล้ว`);render();setTimeout(()=>otV35ShowPrint(rec.id),120);return;
+ }
+ if(a==='otPreviewDraft'){const data=otV35CollectDraft();const rec={id:'DRAFT',...data,status:'draft',totals:otV35Totals(data)};window.otV35DraftSaved=rec;otV35ShowPrint('DRAFT');return}
+ if(a==='otPrint'){otV35ShowPrint(el.dataset.id);return}
+});
+
+document.addEventListener('input',e=>{if(e.target.matches('[data-ot-j],[data-ot-p]')){otV35CollectDraft();otV35UpdateTotals()}});
+document.addEventListener('change',e=>{if(e.target.matches('[data-ot-j],[data-ot-p]')){otV35CollectDraft();otV35RenderJobs()}});
+
+// Small cloud bridge: tries to persist V35 OT documents in a dedicated bucket without breaking the app if the SQL policy is not deployed yet.
+async function otV35CloudUpsert(rec){try{
+ const row={bucket:'ot_requests',item_id:String(rec.id),payload:rec,updated_at:new Date(rec.createdAt||Date.now()).toISOString()};
+ const u=FNB_CLOUD.url+'/rest/v1/'+FNB_CLOUD.table+'?on_conflict=bucket,item_id';
+ const r=await fetch(u,{method:'POST',headers:cloudHeaders(true),body:JSON.stringify([row]),cache:'no-store'});
+ if(!r.ok)throw new Error(await r.text());
+ return true;
+ }catch(e){console.warn('[OT V35 cloud]',e);return false}}
+async function otV35CloudLoad(){try{
+ const u=FNB_CLOUD.url+'/rest/v1/'+FNB_CLOUD.table+'?select=item_id,payload,updated_at&bucket=eq.ot_requests';
+ const r=await fetch(u,{headers:cloudHeaders(),cache:'no-store'}); if(!r.ok)return false; const rows=await r.json();
+ const local=new Map((DATA.otRequests||[]).map(x=>[String(x.id),x])); rows.forEach(x=>{if(x.payload&&!local.has(String(x.item_id)))local.set(String(x.item_id),x.payload)});
+ DATA.otRequests=Array.from(local.values()).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));localStorage.setItem(OT_REQUEST_STORE_KEY,JSON.stringify(DATA.otRequests));if(page==='ot')render();return true;
+ }catch(e){return false}}
+window.otV35CloudLoad=otV35CloudLoad;
+const _oldOtSaveLocal=otV35SaveLocal; otV35SaveLocal=function(rec){_oldOtSaveLocal(rec);otV35CloudUpsert(rec)};
+setTimeout(()=>otV35CloudLoad(),1500);
+
 </script>
 </body></html>
