@@ -1567,15 +1567,15 @@ else if(a==="addMovement"){
  const mvTotal=hours(mvStart,mvEnd);
  const destHotel=activeRq?.toHotel||$("m_toHotel").value;
  const destOutlet=activeRq?.toOutlet||$("m_toOutlet").value;
- const common={id:newRecordId("MV"),toHotel:destHotel,toOutlet:destOutlet,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,requestId:activeRq?.id||null};
+ const common={toHotel:destHotel,toOutlet:destOutlet,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,requestId:activeRq?.id||null};
  picked.forEach(x=>{
    const otH=movementOTFromHome(x,mvStart,mvEnd);
    const workedH=movementWorkedActual(mvStart,mvEnd,0);
-   DATA.movements.push({...common,fromHotel:x.hotel,fromOutlet:x.outlet,code:x.id,name:x.name,homeShiftStart:x.shiftStart||"07:00",homeShiftEnd:x.shiftEnd||"16:00",breakHours:Number(x.breakHours||1),workedHours:workedH,regularWorkedHours:Math.min(workedH,REGULAR_WORK_HOURS),otHours:otH,otRate:DATA.otRate,otAmount:+(otH*DATA.otRate).toFixed(2),sourceType:"employee_master"});
+   DATA.movements.push({id:newRecordId("MV"),...common,fromHotel:x.hotel,fromOutlet:x.outlet,code:x.id,name:x.name,homeShiftStart:x.shiftStart||"07:00",homeShiftEnd:x.shiftEnd||"16:00",breakHours:Number(x.breakHours||1),workedHours:workedH,regularWorkedHours:Math.min(workedH,REGULAR_WORK_HOURS),otHours:otH,otRate:DATA.otRate,otAmount:+(otH*DATA.otRate).toFixed(2),sourceType:"employee_master"});
  });
  if(manualName){
    const fake={shiftStart:"07:00",shiftEnd:"16:00"}; const otH=movementOTFromHome(fake,mvStart,mvEnd);
-   DATA.movements.push({...common,fromHotel:$("m_fromHotel").value,fromOutlet:$("m_fromOutlet").value,code:manualCode,name:manualName,homeShiftStart:fake.shiftStart,homeShiftEnd:fake.shiftEnd,breakHours:1,workedHours:movementWorkedActual(mvStart,mvEnd,0),regularWorkedHours:Math.min(movementWorkedActual(mvStart,mvEnd,0),REGULAR_WORK_HOURS),otHours:otH,otRate:DATA.otRate,otAmount:+(otH*DATA.otRate).toFixed(2),manual:true,sourceType:"manual"});
+   DATA.movements.push({id:newRecordId("MV"),...common,fromHotel:$("m_fromHotel").value,fromOutlet:$("m_fromOutlet").value,code:manualCode,name:manualName,homeShiftStart:fake.shiftStart,homeShiftEnd:fake.shiftEnd,breakHours:1,workedHours:movementWorkedActual(mvStart,mvEnd,0),regularWorkedHours:Math.min(movementWorkedActual(mvStart,mvEnd,0),REGULAR_WORK_HOURS),otHours:otH,otRate:DATA.otRate,otAmount:+(otH*DATA.otRate).toFixed(2),manual:true,sourceType:"manual"});
  }
  saveMovements();
 
