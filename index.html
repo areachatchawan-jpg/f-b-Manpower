@@ -28,7 +28,7 @@ label{display:block;font-weight:700;font-size:13px;color:#355b7e;margin-bottom:6
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}.pill-blue{background:#e8f3ff;color:#24639f}.pill-gold{background:#f7efde;color:#896b31}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.kpi{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.kpi .l{font-size:12px;color:#70859b}.kpi .v{font-size:28px;font-weight:800;color:#194c82;margin-top:3px}
 table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{background:linear-gradient(135deg,#173d6d,#2f78d8);color:#fff;padding:12px;font-size:12px;text-align:left}td{padding:11px 12px;border-bottom:1px solid #e7eef6;font-size:12px;color:#2b4a66;background:#fff}tr:nth-child(even) td{background:#fbfdff}
-.cloud-status{font-size:11px;font-weight:800;padding:6px 9px;border-radius:999px;background:#fff8e8;color:#a66a00;white-space:nowrap}.cloud-status.online{background:#eaf8ef;color:#18864b}.cloud-status.offline{background:#fff0f0;color:#b42318}.cloud-status.connecting{background:#fff8e8;color:#a66a00}@media(max-width:700px){.cloud-status{font-size:10px;padding:5px 7px}}
+.cloud-status{font-size:11px;font-weight:800;padding:6px 9px;border-radius:999px;background:#fff8e8;color:#a66a00;white-space:nowrap}.cloud-status.online{background:#eaf8ef;color:#18864b}.cloud-status.offline{background:#fff0f0;color:#b42318}.cloud-status.connecting{background:#fff8e8;color:#a66a00}@media(max-width:700px){.cloud-status{font-size:10px;padding:5px 7px}.btn{min-height:44px}}
 .toast{position:fixed;right:16px;bottom:18px;z-index:80;background:#173e70;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 14px 32px rgba(0,0,0,.18);display:none;max-width:90vw}.toast.show{display:block}.empty{padding:30px;text-align:center;color:#7b8da2}.footer-note{margin-top:18px;text-align:center;font-size:11px;color:#7b8ea3}
 @media(max-width:900px){.actions{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.header-inner{padding:8px 10px;gap:7px;flex-wrap:wrap}.nav{display:none}.page{padding:12px 10px 28px}.hotel-grid,.grid-2,.actions,.kpis{grid-template-columns:1fr}.hotel-btn{min-height:245px}.hotel-art{height:175px}.hotel-art img{max-height:145px}.hero{padding:18px;border-radius:22px}.brand{flex:1 1 108px;min-width:108px;gap:7px}.brand img{width:42px;height:36px;border-radius:10px;padding:2px}.brand-title{font-size:13px;line-height:1.05;white-space:nowrap}.brand-sub{display:none}.session-bar{flex:0 0 auto;gap:6px}.user-badge{max-width:76px;padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.session-bar .btn{min-height:44px;padding:8px 10px;white-space:nowrap}}
@@ -275,7 +275,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 </style>
 
 <style id="v29-line-report-css">
-.v29-line-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,#06c755,#00a94f);color:#fff!important;border:0;border-radius:11px;padding:9px 13px;font-weight:900;font-size:11px;box-shadow:0 7px 16px rgba(0,169,79,.18)}
+.v29-line-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;background:linear-gradient(135deg,#06c755,#00a94f);color:#fff!important;border:0;border-radius:11px;padding:9px 13px;font-weight:900;font-size:11px;box-shadow:0 7px 16px rgba(0,169,79,.18)}
 .v29-line-btn:hover{filter:brightness(1.03);transform:translateY(-1px)}
 .v29-line-btn.secondary{background:#fff;color:#087b3b!important;border:1px solid #bfe8cf;box-shadow:none}
 .v29-line-status{font-size:10px;color:#648099;margin-top:6px}
@@ -284,7 +284,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 </style>
 </head>
 <body>
-<div id="app"></div><div id="v29LinePreviewHost" style="max-width:1180px;margin:0 auto;padding:0 16px 16px"></div><div id="toast" class="toast"></div>
+<div id="app"></div><div id="v29LinePreviewHost" style="max-width:1180px;margin:0 auto;padding:0 16px 16px"></div><div style="max-width:1180px;margin:0 auto;padding:0 16px"><div style="font-size:10px;color:#6f8498;margin-top:6px">ชื่อสถานที่แสดงแบบทางการ: ชื่อห้องอาหารเต็ม + ชั้น/โซน เพื่อแยกห้องอาหารชื่อเดียวกันให้ชัดเจนรหัสรายการสร้างใหม่ไม่ซ้ำสำหรับการใช้งานหลายผู้ใช้</div></div><div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const LOGOS={
@@ -508,7 +508,16 @@ function cloudHeaders(json=false){
  }
  return h;
 }
-function cloudId(x){return String(x.id||x.code+'_'+x.date+'_'+x.start+'_'+x.end)}
+function newRecordId(prefix){
+ const rnd=(crypto?.randomUUID?.()||(`${Date.now()}-${Math.random().toString(36).slice(2,10)}`));
+ return `${prefix}-${rnd}`;
+}
+function cloudId(x){
+ if(x?.id)return String(x.id);
+ if(x?.requestId&&x?.code)return `MV-${x.requestId}-${x.code}-${x.date||''}-${x.start||''}-${x.end||''}`;
+ if(x?.code)return `REC-${x.code}-${x.date||''}-${x.start||''}-${x.end||''}-${x.type||''}`;
+ return String(x?.id||newRecordId('REC'));
+}
 function cloudFingerprint(x){
  const c={...(x||{})}; delete c.updatedAt; return JSON.stringify(c);
 }
@@ -698,7 +707,10 @@ function movementOTAmount(start,end,rate=DATA.otRate){return +(movementOT(start,
 function movementRegularEnd(start){const [h,m]=start.split(":").map(Number);let mins=h*60+m+NORMAL_SHIFT_HOURS*60;mins%=1440;return `${String(Math.floor(mins/60)).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`}
 
 function hotelName(id){return DATA.hotels[id]?.name||id}
-function outletName(hotel,id){return DATA.hotels[hotel]?.outlets.find(o=>o.id===id)?.name||id}
+function outletName(hotel,id){
+ const o=DATA.hotels[hotel]?.outlets.find(x=>x.id===id);
+ return o ? `${o.name}${o.floor?` — ${o.floor}`:''}` : id;
+}
 function roleOptions(selected=""){return DATA.positions.map(x=>`<option ${x===selected?"selected":""}>${x}</option>`).join("")}
 function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function logo(id){return `<img src="${LOGOS[id]}" alt="${hotelName(id)}">`}
@@ -1483,7 +1495,7 @@ else if(a==="setEmployeeDayStatus"){const idx=+el.dataset.i,emp=DATA.employees[i
  else if(a==="addRequest"){
  const rawQty=Math.floor(+$("r_qty").value||0);
  if(rawQty<1)return toast("กรุณาระบุจำนวนคนอย่างน้อย 1 คน");
- const rq={id:"REQ-"+Date.now()+"-"+(DATA.requests.length+1),status:"pending",createdAt:Date.now(),fromHotel:$("r_fromHotel").value,fromOutlet:$("r_fromOutlet").value,toHotel:$("r_toHotel").value,toOutlet:$("r_toOutlet").value,role:$("r_role").value,qty:rawQty,serviceRound:$("r_round").value,date:normalizeISODate($("r_date").value),start:$("r_start").value,end:$("r_end").value,reason:$("r_reason").value,approverName:$("r_approver")?.value?.trim()||"ไม่ระบุ",approvedBy:null,approvedAt:null,assignedCodes:[],createdBy:v21CurrentUser&&v21CurrentUser.id||null,createdByName:v21CurrentUser&&v21CurrentUser.name||null};
+ const rq={id:newRecordId("REQ"),status:"pending",createdAt:Date.now(),fromHotel:$("r_fromHotel").value,fromOutlet:$("r_fromOutlet").value,toHotel:$("r_toHotel").value,toOutlet:$("r_toOutlet").value,role:$("r_role").value,qty:rawQty,serviceRound:$("r_round").value,date:normalizeISODate($("r_date").value),start:$("r_start").value,end:$("r_end").value,reason:$("r_reason").value,approverName:$("r_approver")?.value?.trim()||"ไม่ระบุ",approvedBy:null,approvedAt:null,assignedCodes:[],createdBy:v21CurrentUser&&v21CurrentUser.id||null,createdByName:v21CurrentUser&&v21CurrentUser.name||null};
  DATA.requests.push(rq);
  v21Audit('CREATE_REQUEST',`${rq.id} • ${hotelName(rq.fromHotel)} → ${hotelName(rq.toHotel)} • ${rq.qty} คน`);
  saveRequests();
@@ -1555,7 +1567,7 @@ else if(a==="addMovement"){
  const mvTotal=hours(mvStart,mvEnd);
  const destHotel=activeRq?.toHotel||$("m_toHotel").value;
  const destOutlet=activeRq?.toOutlet||$("m_toOutlet").value;
- const common={toHotel:destHotel,toOutlet:destOutlet,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,requestId:activeRq?.id||null};
+ const common={id:newRecordId("MV"),toHotel:destHotel,toOutlet:destOutlet,serviceRound:activeRq?.serviceRound||"unknown",date:mvDate,start:mvStart,end:mvEnd,totalHours:mvTotal,requestId:activeRq?.id||null};
  picked.forEach(x=>{
    const otH=movementOTFromHome(x,mvStart,mvEnd);
    const workedH=movementWorkedActual(mvStart,mvEnd,0);
