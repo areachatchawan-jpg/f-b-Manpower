@@ -323,6 +323,15 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 @media(max-width:850px){.live-manpower-grid{grid-template-columns:1fr}}@media(max-width:600px){.live-manpower-head{flex-direction:column}.live-detail-row{grid-template-columns:64px 1fr}}
 </style>
 </style>
+<style id="v36-all-staff-css">
+/* V36 All Staff Whereabouts — every employee remains visible even when an outlet is hidden/closed */
+.all-staff-board{margin-top:16px;border:1px solid #d8e8f7;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 10px 28px rgba(48,104,164,.07)}
+.all-staff-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px;background:linear-gradient(135deg,#f7fbff,#eef7ff)}
+.all-staff-title{font-weight:900;color:#194c82;font-size:16px}.all-staff-sub{font-size:11px;color:#71869b;margin-top:3px}
+.all-staff-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;padding:12px 14px 0}.all-staff-kpi{border:1px solid #dfeaf4;border-radius:14px;background:#fbfdff;padding:10px;text-align:center}.all-staff-kpi b{display:block;font-size:21px;color:#1d568c}.all-staff-kpi span{font-size:10px;color:#6f8499}
+.all-staff-table-wrap{margin:14px;border:1px solid #dfe8f1;border-radius:15px;overflow:auto;max-height:520px}.all-staff-table{min-width:980px}.all-staff-table th{position:sticky;top:0;z-index:2}.all-staff-table td{vertical-align:top}.all-staff-name{font-weight:900;color:#214f80}.all-staff-id{font-size:10px;color:#8193a5;margin-top:2px}.all-staff-home{font-weight:800;color:#365f7f}.all-staff-home small{display:block;color:#7b90a4;margin-top:2px}.all-staff-muted{font-size:10px;color:#7a8ea2}.all-staff-where{font-weight:800;color:#1b5d90}.all-staff-where small{display:block;font-weight:600;color:#74899d;margin-top:3px;line-height:1.45}.all-staff-status{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;white-space:nowrap}.all-staff-status.work{background:#e9f8ef;color:#19734b}.all-staff-status.off{background:#fff6e4;color:#91620d}.all-staff-status.leave{background:#fff0f0;color:#a33a43}.all-staff-status.pending{background:#fff8e7;color:#94640c}.all-staff-status.absent{background:#f1f4f7;color:#657889}.all-staff-op{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:800;background:#eef7ff;color:#28669c}.all-staff-op.closed{background:#fff0f0;color:#a33a43}.all-staff-op.inactive{background:#f1f4f7;color:#687b8d}.all-staff-note{margin:0 14px 14px;padding:10px 12px;border-radius:12px;background:#f6fbff;border:1px dashed #cfe3f3;color:#56718b;font-size:10px;line-height:1.55}
+@media(max-width:700px){.all-staff-head{flex-direction:column}.all-staff-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.all-staff-table-wrap{margin:10px}.all-staff-note{margin:0 10px 10px}}
+</style>
 <style id="v31-planning-attendance-css">
 .v31-plan-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}.v31-calendar{overflow:auto;border:1px solid #dce9f5;border-radius:16px}.v31-calendar table{min-width:1120px}.v31-calendar td,.v31-calendar th{vertical-align:top}.v31-outlet-name{font-weight:900;color:#1c4d7e}.v31-round-cell{min-width:245px;padding:10px;background:#fbfdff}.v31-round-card{border:1px solid #dbe8f4;border-radius:12px;padding:10px;background:#fff;display:grid;gap:7px;margin-bottom:8px}.v31-round-card:last-child{margin-bottom:0}.v31-round-card.open{border-color:#bfe4cf;background:#f5fcf8}.v31-round-card.closed{border-color:#efcaca;background:#fff7f7}.v31-round-card.planned{border-color:#e6d59c;background:#fffdf4}.v31-round-top{display:flex;justify-content:space-between;gap:6px;align-items:center}.v31-round-title{font-weight:900;color:#204f80;font-size:12px}.v31-status-chip{font-size:10px;font-weight:900;border-radius:999px;padding:4px 7px}.v31-status-chip.open{background:#e8f8ef;color:#19734b}.v31-status-chip.closed{background:#ffeded;color:#a12e35}.v31-status-chip.planned,.v31-status-chip.pending{background:#fff5d9;color:#8a620f}.v31-ops-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.v31-ops-kpi{background:#fff;border:1px solid #dce9f5;border-radius:14px;padding:12px}.v31-ops-kpi b{font-size:23px;color:#194c82;display:block}.v31-ops-kpi span{font-size:10px;color:#71879c}.v31-editor{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v31-time-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v31-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.v31-att-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.v31-draft-badge{background:#fff5d9;color:#8b6413}.v31-approved-badge{background:#e7f8ef;color:#19734b}.v31-att-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.v31-att-row.dirty td{background:#fffdf1!important}.v31-time24{font-family:"Segoe UI",Tahoma,Arial,sans-serif;letter-spacing:.02em}.v31-note{padding:10px 12px;border-radius:12px;background:#fffaf0;border:1px dashed #e5c986;color:#80662b;font-size:11px;line-height:1.55}@media(max-width:900px){.v31-ops-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.v31-editor{grid-template-columns:1fr}}@media(max-width:700px){.v31-ops-summary{grid-template-columns:1fr}.v31-time-row{grid-template-columns:1fr 1fr}.v31-plan-bar>*{width:100%!important}}
 </style>
@@ -470,7 +479,7 @@ const ICONS={
 };
 const DATA={
  hotels:{
-  baiyoke:{name:"Baiyoke Sky Hotel Bangkok",short:"Baiyoke Sky Hotel Bangkok",logo:"baiyoke",outlets:[{id:"coffee",name:"Coffee Shop & Room Service",floor:"F&B"},{id:"minigolf",name:"Mini Golf",floor:"09.00-24.00"},{id:"banquet",name:"จัดเลี้ยง",floor:"Event"},{id:"market",name:"Baiyoke Floating Market",floor:"ชั้น 75"},{id:"bsr76",name:"Bangkok Sky Restaurant – 76F",floor:"ชั้น 76 • ปกติ"},{id:"bsr78",name:"Bangkok Sky Restaurant – 78F",floor:"ชั้น 78 • ปกติ"},{id:"stella",name:"Stella Palace",floor:"ชั้น 79"},{id:"balcony",name:"Bangkok Balcony – 81F",floor:"ชั้น 81 • ปกติ"},{id:"crystal",name:"Crystal Grill",floor:"ชั้น 82"},{id:"rooftop",name:"The Roof Top Bar",floor:"Roof Top 83"},{id:"ibf76",name:"Bangkok Sky Restaurant – 76F (IBF/ABF)",floor:"ชั้น 76 • IBF/ABF"},{id:"ibf78",name:"Bangkok Sky Restaurant – 78F (IBF/ABF)",floor:"ชั้น 78 • IBF/ABF"},{id:"ibf81",name:"Bangkok Balcony – 81F (IBF/ABF)",floor:"ชั้น 81 • IBF/ABF"},{id:"bkkdn",name:"Bangkok Sky Restaurant • D/N",floor:"ตามต้นสังกัด"},{id:"bkkabf",name:"IBF / ABF (เดิม)",floor:"ตามต้นสังกัด"},{id:"beverage",name:"Beverage / Bar Team",floor:"F&B"},{id:"hostess",name:"Admin Hostess",floor:"F&B"},{id:"office",name:"F&B Office",floor:"Office"},{id:"fruit",name:"Fruit Buffet",floor:"ชั้น 18"}],eventRooms:[
+  baiyoke:{name:"Baiyoke Sky Hotel Bangkok",short:"Baiyoke Sky Hotel Bangkok",logo:"baiyoke",outlets:[{id:"coffee",name:"Coffee Shop & Room Service",floor:"F&B"},{id:"minigolf",name:"Mini Golf",floor:"09.00-24.00"},{id:"banquet",name:"จัดเลี้ยง",floor:"Event"},{id:"market",name:"Baiyoke Floating Market – 75F",floor:"ชั้น 75"},{id:"bsr76",name:"Bangkok Sky Restaurant – 76F",floor:"ชั้น 76 • ปกติ"},{id:"bsr78",name:"Bangkok Sky Restaurant – 78F",floor:"ชั้น 78 • ปกติ"},{id:"stella",name:"Stella Palace",floor:"ชั้น 79"},{id:"balcony",name:"Bangkok Balcony – 81F",floor:"ชั้น 81 • ปกติ"},{id:"crystal",name:"Crystal Grill",floor:"ชั้น 82"},{id:"rooftop",name:"The Roof Top Bar",floor:"Roof Top 83"},{id:"ibf76",name:"Bangkok Sky Restaurant – 76F (IBF/ABF)",floor:"ชั้น 76 • IBF/ABF"},{id:"ibf78",name:"Bangkok Sky Restaurant – 78F (IBF/ABF)",floor:"ชั้น 78 • IBF/ABF"},{id:"ibf81",name:"Bangkok Balcony – 81F (IBF/ABF)",floor:"ชั้น 81 • IBF/ABF"},{id:"bkkdn",name:"Bangkok Sky Restaurant • D/N",floor:"ตามต้นสังกัด"},{id:"bkkabf",name:"IBF / ABF (เดิม)",floor:"ตามต้นสังกัด"},{id:"beverage",name:"Beverage / Bar Team",floor:"F&B"},{id:"hostess",name:"Admin Hostess",floor:"F&B"},{id:"office",name:"F&B Office",floor:"Office"},{id:"fruit",name:"Fruit Buffet",floor:"ชั้น 18"}],eventRooms:[
    {id:"skyroom",name:"Sky Room",floor:"ชั้น 17",kind:"ห้องประชุม / Event"},
    {id:"rainbowhall",name:"Rainbow Hall",floor:"ชั้น 17",kind:"ห้องประชุม / Event"},
    {id:"rainbow1",name:"Rainbow I",floor:"ชั้น 17",kind:"ห้องประชุม / Event"},
@@ -967,7 +976,11 @@ const SERVICE_ROUNDS=[
 const LEGACY_ROUND_LABELS={morning:"ABF — American Breakfast",afternoon:"Lunch",evening:"Dinner",abf:"ABF — American Breakfast",lunch:"Lunch",dinner:"Dinner"};
 function serviceRoundLabel(id){return LEGACY_ROUND_LABELS[id]||"ไม่ระบุรอบ"}
 function serviceRoundNormalize(id){if(id==='morning'||id==='abf')return 'abf';if(id==='afternoon'||id==='lunch')return 'lunch';if(id==='evening'||id==='dinner')return 'dinner';return id} 
-function todayISO(){return new Date().toISOString().slice(0,10)}
+function todayISO(){
+ const d=new Date();
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+ return `${y}-${m}-${day}`;
+}
 function normalizeISODate(v){
  if(!v)return todayISO();
  if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
@@ -1083,7 +1096,7 @@ function movementOverlapsPeriod(m,date,start,end,excludeRequestId=null){
  if(!m||m.date!==date)return false;if(excludeRequestId!=null&&m.requestId===excludeRequestId)return false;
  return intervalOverlapMinutes(m.start||'00:00',m.end||'00:00',start,end)>0;
 }
-function hasExplicitDailyStatus(e,date){return !!(e?.statusByDate && Object.prototype.hasOwnProperty.call(e.statusByDate,date));}
+function hasExplicitDailyStatus(e,date){return !!DATA.attendance?.[attendanceKey(e?.id,date)];}
 function helperEligibility(e,date,start,end,requestId,destHotel,destOutlet){
  const st=employeeStatusOnDate(e,date);
  if(st.status==='off')return {ok:false,reason:'หยุด'};
@@ -1154,14 +1167,16 @@ function liveOutletStatus(hotel,outlet,date){
 function dailyManpowerLineText(hotel,date){const h=DATA.hotels[hotel],lines=[`📊 F&B MANPOWER • ${hotelName(hotel)}`,`วันที่ ${date}`,`อัปเดต ${new Date().toLocaleString('th-TH')}`,''];(h?.outlets||[]).filter(o=>outletEmployees(hotel,o.id).length>0).forEach(o=>{const s=liveOutletStatus(hotel,o.id,date);lines.push(`🍽️ ${o.name} • ${o.floor}`);lines.push(`ทั้งหมด ${s.total} | ทำงาน ${s.working} | มาจริง ${s.present} | หยุด ${s.off} | ลา ${s.leave} | ส่งไปช่วย ${s.sent}`);if(s.offNames.length)lines.push(`หยุด: ${s.offNames.join(', ')}`);if(s.leaveNames.length)lines.push(`ลา: ${s.leaveNames.join(', ')}`);if(s.presentNames.length)lines.push(`มาจริง: ${s.presentNames.join(', ')}`);if(s.unconfirmedNames.length)lines.push(`ยังไม่เช็ก: ${s.unconfirmedNames.join(', ')}`);lines.push('')});const incoming=DATA.movements.filter(m=>m.toHotel===hotel&&m.date===date);if(incoming.length){lines.push(`👥 รับคนช่วยเข้ามา ${incoming.length} คน`);incoming.forEach(m=>lines.push(`• ${m.name||m.code||'-'} จาก ${hotelName(m.fromHotel)} • ${outletName(m.fromHotel,m.fromOutlet)}`))}return lines.join('\n')}
 function liveManpowerBoardHtml(hotel,date=todayISO()){
  const h=DATA.hotels[hotel];if(!h)return '';
- const outs=(h.outlets||[]).filter(o=>outletEmployees(hotel,o.id).length>0),all=outs.map(o=>liveOutletStatus(hotel,o.id,date));
- const total=all.reduce((n,s)=>n+s.total,0),work=all.reduce((n,s)=>n+s.working,0),present=all.reduce((n,s)=>n+s.present,0),off=all.reduce((n,s)=>n+s.off,0),leave=all.reduce((n,s)=>n+s.leave,0),pending=all.reduce((n,s)=>n+s.unconfirmed,0);
+ const people=allHotelEmployees(hotel),outs=(h.outlets||[]).filter(o=>outletEmployees(hotel,o.id).length>0||o.id==='market'),all=outs.map(o=>liveOutletStatus(hotel,o.id,date));
+ const allRows=people.map(e=>employeeDayRecord(e,date));
+ const total=people.length,work=allRows.filter(r=>r.status==='working').length,present=allRows.filter(r=>r.status==='working'&&(r.attendance==='present'||r.attendance==='late')).length,off=allRows.filter(r=>r.status==='off').length,leave=allRows.filter(r=>r.status==='leave').length,pending=allRows.filter(r=>r.status==='working'&&!r.attendance).length;
  const sent=all.reduce((n,s)=>n+s.sent,0),incoming=DATA.movements.filter(m=>m.toHotel===hotel&&m.date===date).length;
  const saved=localStorage.getItem(`fnb_daily_manpower_line_${hotel}_${date}`)?'บันทึก LINE ล่าสุดแล้ว':'ยังไม่ได้บันทึก LINE';
  return `<section class="live-manpower-easy">
-  <div class="live-easy-head"><div><div class="live-easy-title">🟢 กำลังพลออนไลน์ • ${hotelName(hotel)}</div><div class="live-easy-sub">ดูภาพรวมวันนี้แบบสั้น ๆ • รายชื่อจะเปิดเมื่อกด “รายละเอียด”</div></div><div class="live-manpower-actions"><span class="cloud-status ${navigator.onLine?'online':'offline'}">● ${navigator.onLine?'Online':'Offline'}</span><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${date}">LINE รายงาน</button><button class="btn btn-primary" data-action="nav" data-page="employees">เช็กกำลังคน</button></div></div>
+  <div class="live-easy-head"><div><div class="live-easy-title">🟢 กำลังพลออนไลน์ • ${hotelName(hotel)}</div><div class="live-easy-sub">ดูภาพรวมวันนี้แบบสั้น ๆ • รายชื่อจะเปิดเมื่อกด “รายละเอียด”</div></div><div class="live-manpower-actions"><span class="cloud-status ${CLOUD_OK?'online':'offline'}">● ${CLOUD_OK?'Online':'Offline'}</span><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${date}">LINE รายงาน</button><button class="btn btn-primary" data-action="nav" data-page="employees">เช็กกำลังคน</button></div></div>
   <div class="live-easy-kpis"><div class="live-easy-kpi"><b>${total}</b><span>พนักงานทั้งหมด</span></div><div class="live-easy-kpi"><b>${work}</b><span>ทำงานตามแผน</span></div><div class="live-easy-kpi"><b>${present}</b><span>มาจริง</span></div><div class="live-easy-kpi"><b>${off+leave}</b><span>หยุด + ลา</span></div><div class="live-easy-kpi"><b>${pending}</b><span>ยังไม่เช็ก</span></div></div>
   <div class="live-easy-grid">${outs.map((o,i)=>{const s=all[i];return `<article class="live-easy-card"><div class="live-easy-card-top"><div><div class="live-easy-name">${o.name}</div><div class="live-easy-floor">${o.floor}</div></div><div class="live-easy-count">${s.working} คน</div></div><div class="live-easy-status"><span class="w">ทำงาน<br>${s.working}</span><span class="p">มาจริง<br>${s.present}</span><span class="o">หยุด<br>${s.off}</span><span class="l">ลา<br>${s.leave}</span></div><div class="live-easy-actions"><span class="pill pill-blue">ส่งช่วย ${s.sent}</span>${s.unconfirmed?`<span class="pill pill-gold">ยังไม่เช็ก ${s.unconfirmed}</span>`:`<span class="pill pill-blue">เช็กครบ</span>`}<button class="btn btn-light" data-action="manageOutletRoster" data-hotel="${hotel}" data-outlet="${o.id}" data-date="${date}">เช็กวันนี้</button></div><details class="live-easy-detail"><summary>ดูรายชื่อใน ${o.name}</summary><div class="live-easy-names"><b>มาทำงาน:</b> ${s.workingNames.length?s.workingNames.join(' • '):'-'}<br><b>มาจริง:</b> ${s.presentNames.length?s.presentNames.join(' • '):'ยังไม่มี'}<br><b>หยุด:</b> ${s.offNames.length?s.offNames.join(' • '):'-'}<br><b>ลา:</b> ${s.leaveNames.length?s.leaveNames.join(' • '):'-'}<br><b>ยังไม่เช็ก:</b> ${s.unconfirmedNames.length?s.unconfirmedNames.join(' • '):'ครบแล้ว'}</div></details></article>`}).join('')}</div>
+  ${allStaffBoardHtml(hotel,date,window.fnbBoardRound||'dinner')}
   <div class="live-easy-footer">${saved} • ส่งไปช่วย ${sent} คน • รับคนช่วยเข้า ${incoming} คน • ข้อมูลจะรีเฟรชตาม Cloud Sync</div>
  </section>`;
 }
@@ -1822,7 +1837,7 @@ function dailyWorkPage(){
 function v21Dashboard(){
  const round=window.fnbBoardRound||'dinner';
  const h=DATA.hotels[currentHotel];
- return `${v21Header()}<main class="page">${seniorPageSwitcher('dashboard')}<div class="hero"><div class="eyebrow">F&B OPERATIONS HUB</div><h1>${h.short}</h1><p>หน้า 1 = ดูสถานะทั้งหมด • ไม่ต้องกรอกข้อมูล</p><div style="margin-top:10px"><span class="role-pill">${v21CurrentUser.roleLabel}</span></div></div>${seniorStatusBoard(currentHotel,todayISO(),round)}<section class="section" style="margin-top:14px"><div class="section-title"><div><h2>🔄 วันนี้ใครไปช่วยที่ไหน</h2><div class="small">แสดงเฉพาะ Movement ที่ระบุห้องอาหารต้นทางและปลายทาง</div></div></div>${dailyMovementCards(currentHotel,todayISO(),round)}</section><section class="section" style="margin-top:14px"><div class="section-title"><div><h2>⚠️ สิ่งที่ต้องจัดการ</h2><div class="small">กดแล้วไปทำงานต่อได้ทันที</div></div></div><div class="todo-grid"><div class="todo-card"><div class="todo-icon">👥</div><h3>เช็กกำลังคน</h3><p>เช็กสถานะพนักงานของแต่ละห้องอาหาร</p><button class="btn btn-primary" data-action="nav" data-page="dailyWork">ไปงานประจำวัน</button></div><div class="todo-card"><div class="todo-icon">🔄</div><h3>จัดคนไปช่วย</h3><p>นำคนจากห้องอาหารที่ปิดไปช่วยห้องที่เปิด</p><button class="btn btn-primary" data-action="nav" data-page="movement">จัดคนไปช่วย</button></div></div></section></main>`;
+ return `${v21Header()}<main class="page">${seniorPageSwitcher('dashboard')}<div class="hero"><div class="eyebrow">F&B OPERATIONS HUB</div><h1>${h.short}</h1><p>หน้า 1 = ดูสถานะทั้งหมด • ไม่ต้องกรอกข้อมูล</p><div style="margin-top:10px"><span class="role-pill">${v21CurrentUser.roleLabel}</span></div></div>${seniorStatusBoard(currentHotel,todayISO(),round)}${allStaffBoardHtml(currentHotel,todayISO(),round)}<section class="section" style="margin-top:14px"><div class="section-title"><div><h2>🔄 วันนี้ใครไปช่วยที่ไหน</h2><div class="small">แสดงเฉพาะ Movement ที่ระบุห้องอาหารต้นทางและปลายทาง</div></div></div>${dailyMovementCards(currentHotel,todayISO(),round)}</section><section class="section" style="margin-top:14px"><div class="section-title"><div><h2>⚠️ สิ่งที่ต้องจัดการ</h2><div class="small">กดแล้วไปทำงานต่อได้ทันที</div></div></div><div class="todo-grid"><div class="todo-card"><div class="todo-icon">👥</div><h3>เช็กกำลังคน</h3><p>เช็กสถานะพนักงานของแต่ละห้องอาหาร</p><button class="btn btn-primary" data-action="nav" data-page="dailyWork">ไปงานประจำวัน</button></div><div class="todo-card"><div class="todo-icon">🔄</div><h3>จัดคนไปช่วย</h3><p>นำคนจากห้องอาหารที่ปิดไปช่วยห้องที่เปิด</p><button class="btn btn-primary" data-action="nav" data-page="movement">จัดคนไปช่วย</button></div></div></section></main>`;
 }
 
 function operationsPage(){const hotel=currentHotel||'baiyoke',start=window.opsFocusDate||todayISO(),days=Number(window.opsDays||7),dates=dateRangeList(start,Math.max(7,Math.min(14,days))),outs=operationOutlets(hotel),allOps=operationData().filter(x=>x.hotel===hotel&&dates.includes(x.date)),openCount=allOps.filter(x=>x.status==='open').length,closedCount=allOps.filter(x=>x.status==='closed').length,plannedCount=allOps.filter(x=>!x.status||x.status==='planned').length;return `${v21Header()}<main class="page"><button class="btn btn-light" data-action="nav" data-page="dashboard">← Dashboard</button><div class="section-title"><div><h2>📅 แผนเปิด–ปิดห้องอาหารล่วงหน้า</h2><div class="small">ตั้งล่วงหน้าได้ • 3 รอบมาตรฐาน: ABF (American Breakfast), Lunch, Dinner • แต่ละรอบแยกทีมและกำลังพล</div></div></div><div class="card"><div class="v31-plan-bar"><div style="flex:1;min-width:220px"><label>เริ่มวันที่</label><input id="ops_start" type="date" value="${start}"></div><div style="width:150px"><label>แสดงล่วงหน้า</label><select id="ops_days"><option value="7" ${days===7?'selected':''}>7 วัน</option><option value="14" ${days===14?'selected':''}>14 วัน</option></select></div><button class="btn btn-primary" data-action="refreshOperations">แสดงแผน</button></div></div><div class="v31-ops-summary"><div class="v31-ops-kpi"><b>${openCount}</b><span>รอบที่เปิดในช่วงนี้</span></div><div class="v31-ops-kpi"><b>${closedCount}</b><span>รอบที่ปิด</span></div><div class="v31-ops-kpi"><b>${plannedCount}</b><span>รอบที่ยังไม่ได้ตั้งค่า</span></div><div class="v31-ops-kpi"><b>${allOps.length}</b><span>รายการที่ตั้งค่าแล้ว</span></div></div><div class="card"><div class="v31-calendar"><table><thead><tr><th>ห้องอาหาร</th>${dates.map(d=>`<th>${formatThaiDate(d)}<br><span style="font-weight:600;opacity:.8">${new Date(d+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short'})}</span></th>`).join('')}</tr></thead><tbody>${outs.map(o=>`<tr><td><div class="v31-outlet-name">${operationOutletDisplay(o)}</div><div class="small">${o.floor||''}</div></td>${dates.map(d=>`<td class="v31-round-cell">${operationRoundsForOutlet(o.id).map(r=>opRoundCardHtml(hotel,o.id,d,r)).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div><div class="card" style="margin-top:14px"><b>การเชื่อมกับกำลังพล</b><div class="v31-note" style="margin-top:8px">เมื่อรอบใด “ปิด” ระบบจะถือว่าคนของรอบนั้นเป็น Available for Movement เพื่อให้ผู้มีสิทธิ์ตรวจสอบและสร้าง Request ช่วยห้องอื่นได้ แต่จะไม่ย้ายคนให้อัตโนมัติ และไม่แก้ต้นสังกัดใน Employee Master</div></div></main>`}
@@ -1902,7 +1917,7 @@ function opRoundCardHtml(hotel,outlet,date,round){const r=getOperation(hotel,out
 function operationOutletDisplay(o){const m={bsr76:'Bangkok Sky Restaurant – 76F',bsr78:'Bangkok Sky Restaurant – 78F',ibf76:'Bangkok Sky Restaurant – 76F (IBF/ABF)',ibf78:'Bangkok Sky Restaurant – 78F (IBF/ABF)',stella:'Stella Palace – 79F',balcony:'Bangkok Balcony – 81F',ibf81:'Bangkok Balcony – 81F (IBF/ABF)',crystal:'Crystal Grill – 82F',rooftop:'The Roof Top Bar – 83F',coffee:'Coffee Shop & Room Service',minigolf:'Mini Golf',banquet:'Banquet & Events'};return m[o.id]||o.name}
 function operationTeamLabel(outlet,round){return String(outlet||'').startsWith('ibf')&&round==='abf'?'ทีม IBF/ABF':round==='abf'?'ทีม ABF': 'ทีมปกติ'}
 function operationRoundsForOutlet(outletId){return String(outletId).startsWith('ibf')?['abf']:['abf','lunch','dinner']}
-function operationOutlets(hotel){return availableOutlets(hotel).filter(o=>outletEmployees(hotel,o.id).length>0||['bsr76','bsr78','stella','ibf81','ibf76','ibf78','crystal','rooftop','balcony','coffee','minigolf','banquet'].includes(o.id))}
+function operationOutlets(hotel){return availableOutlets(hotel).filter(o=>outletEmployees(hotel,o.id).length>0||['market','bsr76','bsr78','stella','ibf81','ibf76','ibf78','crystal','rooftop','balcony','coffee','minigolf','banquet'].includes(o.id))}
 
 function v21Render(){if(!v21CurrentUser){page='login';$('app').innerHTML=v21LoginPage();return}if(!currentHotel&&!v21CanHotelSwitch())currentHotel=v21CurrentUser.hotel;if(!v21CanPage(page))page='dashboard';let body=page==='select'?selectPage():page==='dashboard'?v21Dashboard():page==='dailyWork'?dailyWorkPage():page==='admin'?v21Admin():page==='employees'?employees():page==='operations'?operationsPage():page==='inbox'?inboxPage():page==='request'?requestPage():page==='movement'?movementPage():page==='ot'?otPage():page==='reports'?reports():v21Dashboard();$('app').innerHTML=body;if(page==="movement"){renderMovementEmployeePicker();const mh=$("m_toHotel"),mo=$("m_toOutlet");const rq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;const refreshDest=()=>{if(!mh||!mo)return;const selected=rq?.toOutlet||'';mo.innerHTML=(DATA.hotels[mh.value]?.outlets||[]).map((o,i)=>`<option value="${o.id}" ${selected===o.id||(!selected&&i===0)?'selected':''}>${o.name} • ${o.floor}</option>`).join('')};mh?.addEventListener('change',refreshDest);refreshDest();}
 if(page==="dashboard"){const rs=$("fnbBoardRound");if(rs)rs.addEventListener("change",()=>{window.fnbBoardRound=rs.value;render()});document.querySelectorAll("[data-fnb-round]").forEach(b=>b.addEventListener("click",()=>{window.fnbBoardRound=b.dataset.fnbRound||"dinner";render()}));}
@@ -2238,12 +2253,263 @@ document.addEventListener("change",e=>{
  if(e.target.id==="m_empScope"||e.target.id==="m_helpStart"||e.target.id==="m_helpEnd")renderMovementEmployeePicker()
  if(e.target.id==="r_toHotel"){const h=e.target.value;const sel=$("r_casualLocation");if(sel){const current=sel.value;sel.innerHTML=eventLocationOptions(h,current)||eventLocationOptions(h,"");}}
   });
+/* ================================================================
+   V36 — SINGLE CLOUD EMPLOYEE MASTER + REAL CLOUD STATUS + THAI DATE
+   - Employee Master is authoritative in Supabase across PC/mobile.
+   - LocalStorage is a cache only.
+   - Deletes are represented as tombstones (deleted:true), so old devices
+     cannot resurrect removed employees.
+   - Live Online badge is based on successful Cloud sync, not navigator.onLine.
+   ================================================================ */
+const V36_EMPLOYEE_BUCKET='employees';
+const V36_EMP_PENDING_KEY='baiyoke_fnb_manpower_employees_v36_pending';
+let V36_EMP_SYNC_BUSY=false;
+let V36_EMP_WRITE_BUSY=false;
+
+function v36ReadPendingMaster(){
+  try{
+    const raw=localStorage.getItem(V36_EMP_PENDING_KEY);
+    const arr=JSON.parse(raw||'null');
+    return Array.isArray(arr)?arr.map(v36NormalizeEmployee).filter(e=>e.id&&e.name):null;
+  }catch(e){return null}
+}
+function v36WritePendingMaster(arr){
+  try{localStorage.setItem(V36_EMP_PENDING_KEY,JSON.stringify((arr||[]).map(v36NormalizeEmployee)))}catch(e){}
+}
+function v36ClearPendingMaster(){try{localStorage.removeItem(V36_EMP_PENDING_KEY)}catch(e){}}
+
+function v36NormalizeEmployee(e){
+  const x={...(e||{})};
+  delete x.statusByDate;
+  x.id=String(x.id||'');
+  x.name=String(x.name||'').trim();
+  x.shiftStart=x.shiftStart||'07:00';
+  x.shiftEnd=x.shiftEnd||'16:00';
+  x.breakHours=Number.isFinite(+x.breakHours)?+x.breakHours:1;
+  x.defaultStatus=x.defaultStatus||'working';
+  return x;
+}
+
+function v36ActiveEmployeesFromRows(rows){
+  return (rows||[])
+    .filter(r=>r && r.payload && !r.payload.deleted)
+    .map(r=>v36NormalizeEmployee(r.payload))
+    .filter(e=>e.id && e.name);
+}
+
+async function v36FetchEmployeeRows(){
+  return await cloudFetch(V36_EMPLOYEE_BUCKET);
+}
+
+async function v36PersistEmployeesMaster(reason='save'){
+  if(!navigator.onLine){
+    CLOUD_OK=false;
+    cloudSetStatus('offline','อุปกรณ์ออฟไลน์');
+    return false;
+  }
+  if(V36_EMP_WRITE_BUSY)return false;
+  V36_EMP_WRITE_BUSY=true;
+  try{
+    cloudSetStatus('connecting','กำลังบันทึก Employee Master บน Cloud');
+    const rows=await v36FetchEmployeeRows();
+    const remote=new Map(rows.map(r=>[String(r.item_id),r]));
+    const local=(DATA.employees||[]).map(v36NormalizeEmployee).filter(e=>e.id&&e.name);
+    const localIds=new Set(local.map(e=>e.id));
+
+    // Anything that exists on the Cloud but no longer exists in the current
+    // master is converted to a tombstone instead of being resurrected later.
+    const tombstones=[];
+    for(const r of rows){
+      const id=String(r.item_id);
+      if(!localIds.has(id) && !r.payload?.deleted){
+        tombstones.push({
+          ...v36NormalizeEmployee(r.payload),
+          deleted:true,
+          deletedAt:Date.now(),
+          deletedBy:v21CurrentUser?.id||'system',
+          deletedReason:reason
+        });
+      }
+    }
+
+    if(local.length) await cloudUpsert(V36_EMPLOYEE_BUCKET,local);
+    if(tombstones.length) await cloudUpsert(V36_EMPLOYEE_BUCKET,tombstones);
+
+    // Re-read the Cloud Master and make it the local source of truth.
+    const verify=await v36FetchEmployeeRows();
+    DATA.employees=v36ActiveEmployeesFromRows(verify);
+    localSave(EMPLOYEE_STORE_KEY,DATA.employees);
+    v36ClearPendingMaster();
+    updateCloudSnapshots();
+    CLOUD_STATE.lastSync=Date.now();
+    CLOUD_OK=true;
+    cloudSetStatus('online');
+    return true;
+  }catch(e){
+    CLOUD_OK=false;
+    CLOUD_STATE.error=String(e?.message||e);
+    cloudSetStatus('offline',CLOUD_STATE.error);
+    console.warn('[F&B V36 Employee Master]',e);
+    return false;
+  }finally{
+    V36_EMP_WRITE_BUSY=false;
+  }
+}
+
+async function v36SyncEmployeesMaster(){
+  if(!navigator.onLine){
+    CLOUD_OK=false;
+    cloudSetStatus('offline','อุปกรณ์ออฟไลน์');
+    return false;
+  }
+  if(V36_EMP_SYNC_BUSY)return true;
+  V36_EMP_SYNC_BUSY=true;
+  try{
+    cloudSetStatus('connecting','กำลังอ่าน Employee Master จาก Cloud');
+    const pending=v36ReadPendingMaster();
+    if(pending){
+      DATA.employees=pending;
+      localSave(EMPLOYEE_STORE_KEY,DATA.employees);
+      return await v36PersistEmployeesMaster('pending-offline-change');
+    }
+    const rows=await v36FetchEmployeeRows();
+
+    // Empty Cloud means first-time initialization: seed from this browser once.
+    // Once the Cloud contains anything (including only tombstones), Cloud wins.
+    if(rows.length===0){
+      const seed=(DATA.employees||[]).map(v36NormalizeEmployee).filter(e=>e.id&&e.name);
+      if(seed.length) await cloudUpsert(V36_EMPLOYEE_BUCKET,seed);
+    }
+
+    const finalRows=rows.length===0 ? await v36FetchEmployeeRows() : rows;
+    DATA.employees=v36ActiveEmployeesFromRows(finalRows);
+    localSave(EMPLOYEE_STORE_KEY,DATA.employees);
+    updateCloudSnapshots();
+    CLOUD_STATE.lastSync=Date.now();
+    CLOUD_OK=true;
+    cloudSetStatus('online');
+    return true;
+  }catch(e){
+    CLOUD_OK=false;
+    CLOUD_STATE.error=String(e?.message||e);
+    cloudSetStatus('offline',CLOUD_STATE.error);
+    console.warn('[F&B V36 Employee Master]',e);
+    return false;
+  }finally{
+    V36_EMP_SYNC_BUSY=false;
+  }
+}
+
+// Keep the existing API name used throughout the app, but make employees
+// authoritative Cloud data while leaving the other buckets on their current logic.
+const V36_oldCloudSyncBucket=cloudSyncBucket;
+cloudSyncBucket=async function(bucket){
+  if(bucket===V36_EMPLOYEE_BUCKET)return v36SyncEmployeesMaster();
+  return V36_oldCloudSyncBucket(bucket);
+};
+
+// Employee save: write the entire current master, then verify from Cloud.
+const V36_oldSaveEmployees=saveEmployees;
+saveEmployees=function(){
+  DATA.employees=(DATA.employees||[]).map(v36NormalizeEmployee).filter(e=>e.id&&e.name);
+  localSave(EMPLOYEE_STORE_KEY,DATA.employees);
+  v36WritePendingMaster(DATA.employees);
+  clearTimeout(CLOUD_PUSH_TIMERS.employees);
+  CLOUD_PUSH_TIMERS.employees=setTimeout(()=>{v36PersistEmployeesMaster('saveEmployees')},100);
+};
+
+// Use the real Cloud status in the dashboard badge as well.
+const V36_oldCloudSetStatus=cloudSetStatus;
+cloudSetStatus=function(state,error=''){
+  V36_oldCloudSetStatus(state,error);
+  const ids=['cloudStatus','opsCloudStatus'];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(state==='online'){
+      el.title=`Cloud Online • sync ล่าสุด ${CLOUD_STATE.lastSync?new Date(CLOUD_STATE.lastSync).toLocaleString('th-TH'):'-'}`;
+    }else if(state==='offline'){
+      el.title=error||'Cloud Offline';
+    }
+  });
+};
+
+// Cloud health is authoritative for the visible live-manpower badge.
+async function v36CloudHealth(){
+  if(!navigator.onLine){CLOUD_OK=false;cloudSetStatus('offline','อุปกรณ์ออฟไลน์');return false;}
+  try{
+    const rows=await cloudFetch(V36_EMPLOYEE_BUCKET);
+    CLOUD_STATE.lastSync=Date.now();
+    CLOUD_OK=true;
+    cloudSetStatus('online');
+    return Array.isArray(rows);
+  }catch(e){
+    CLOUD_OK=false;
+    CLOUD_STATE.error=String(e?.message||e);
+    cloudSetStatus('offline',CLOUD_STATE.error);
+    return false;
+  }
+}
+
+// Initial sync: core operational data must be available, but auxiliary config
+// failures must not incorrectly make the Employee/Manpower Cloud badge offline.
+const V36_oldCloudInitialSync=cloudInitialSync;
+cloudInitialSync=async function(){
+  cloudSetStatus('connecting');
+  const results=[];
+  for(const b of ['requests','movements','ots','employees','ot_requests']){
+    try{results.push(await cloudSyncBucket(b));}catch(e){results.push(false);}
+  }
+  try{results.push(await cloudSyncAttendance());}catch(e){results.push(false);}
+  // These are optional to the manpower count/status. Try them, but do not
+  // downgrade the core Cloud state if a legacy policy is missing.
+  try{await cloudSyncOperations();}catch(e){}
+  try{await cloudLoadOperationDefaults();}catch(e){}
+  try{await cloudLoadAdminConfig();}catch(e){}
+  const coreOK=results.every(Boolean);
+  CLOUD_OK=coreOK;
+  if(coreOK) cloudSetStatus('online');
+  else cloudSetStatus('offline',CLOUD_STATE.error||'Cloud sync บางส่วนไม่สำเร็จ');
+  render();
+  return coreOK;
+};
+
+// Polling keeps PC/mobile aligned even when Realtime is unavailable.
+const V36_oldCloudPoll=cloudPoll;
+cloudPoll=async function(){
+  if(!navigator.onLine){CLOUD_OK=false;cloudSetStatus('offline','อุปกรณ์ออฟไลน์');return false;}
+  try{
+    await cloudSyncBucket('requests');
+    await cloudSyncBucket('movements');
+    await cloudSyncBucket('ots');
+    await cloudSyncBucket('employees');
+    await cloudSyncBucket('ot_requests');
+    await cloudSyncAttendance();
+    await v36CloudHealth();
+    if(document.visibilityState!=='hidden')render();
+    return CLOUD_OK;
+  }catch(e){
+    CLOUD_OK=false;
+    CLOUD_STATE.error=String(e?.message||e);
+    cloudSetStatus('offline',CLOUD_STATE.error);
+    return false;
+  }
+};
+
+// Realtime Employee updates always pull the Cloud Master.
+const V36_oldRealtimeInit=fnbRealtimeInit;
+fnbRealtimeInit=async function(){return V36_oldRealtimeInit();};
+
+setInterval(()=>{
+  if(navigator.onLine) v36CloudHealth();
+},10000);
+
 async function bootFNBManpower(){
  render();
  await cloudInitialSync();
  await fnbRealtimeInit();
  clearInterval(CLOUD_TIMER);
- CLOUD_TIMER=setInterval(()=>{if(navigator.onLine)cloudPoll()},3000);
+ CLOUD_TIMER=setInterval(()=>{if(navigator.onLine)cloudPoll()},5000);
  render();
 }
 bootFNBManpower();
@@ -2500,4 +2766,4 @@ window.openOTEditor=function(doc,mode='edit'){
  wrap.querySelector('[data-edit-print]').onclick=()=>{const out=collect();window.fnbSaveOTDoc?.(out);wrap.remove();otV35ShowPrint(out.id||doc.id)};
 };
 </script>
-<div id="buildMarker" style="display:none">FNB Manpower • Planning 3 Rounds + Bulk Attendance • 2026-09-27 • LIVE MOVEMENT / REALTIME BOARD</div></body></html>
+<div id="buildMarker" style="display:none">FNB Manpower • V36 Cloud Master Fix • 2026-09-28 • PC + Mobile Single Employee Master</div></body></html>
