@@ -2,7 +2,59 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#194c82">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="F&amp;B Manpower">
+<meta name="format-detection" content="telephone=no">
+<script id="v80-platform-hardening">
+/* V80: cross-platform hardening (iOS / Android / PC) */
+(function(){
+ // --- session that survives tab-kill on mobile (12h) ---
+ var KEY='fb_manpower_session',TTL=12*3600*1000;
+ function ls(){try{var t='__t';localStorage.setItem(t,t);localStorage.removeItem(t);return localStorage}catch(e){return null}}
+ var L=ls();
+ window.fbSessGet=function(){try{var raw=(L&&L.getItem(KEY))||sessionStorage.getItem(KEY);if(!raw)return null;var o=JSON.parse(raw);if(o&&o.loginAt&&Date.now()-o.loginAt>TTL){window.fbSessDel();return null}return o}catch(e){return null}};
+ window.fbSessSet=function(o){var v=JSON.stringify(o);try{L&&L.setItem(KEY,v)}catch(e){}try{sessionStorage.setItem(KEY,v)}catch(e){}};
+ window.fbSessDel=function(){try{L&&L.removeItem(KEY)}catch(e){}try{sessionStorage.removeItem(KEY)}catch(e){}};
+ // --- pure-JS SHA-256 fallback (crypto.subtle missing on http:// or old WebViews) ---
+ window.fbSha256Hex=function(str){
+  function R(n,x){return (x>>>n)|(x<<(32-n))}
+  var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var b=unescape(encodeURIComponent(str)),bytes=[],i;for(i=0;i<b.length;i++)bytes.push(b.charCodeAt(i));
+  var l=bytes.length*8;bytes.push(0x80);while(bytes.length%64!==56)bytes.push(0);
+  var hi=Math.floor(l/0x100000000);for(i=3;i>=0;i--)bytes.push((hi>>>(i*8))&255);for(i=3;i>=0;i--)bytes.push((l>>>(i*8))&255);
+  var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],W=new Array(64);
+  for(var off=0;off<bytes.length;off+=64){
+   for(i=0;i<16;i++)W[i]=(bytes[off+i*4]<<24)|(bytes[off+i*4+1]<<16)|(bytes[off+i*4+2]<<8)|bytes[off+i*4+3];
+   for(i=16;i<64;i++){var s0=R(7,W[i-15])^R(18,W[i-15])^(W[i-15]>>>3),s1=R(17,W[i-2])^R(19,W[i-2])^(W[i-2]>>>10);W[i]=(W[i-16]+s0+W[i-7]+s1)|0}
+   var a=H[0],bb=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+   for(i=0;i<64;i++){var S1=R(6,e)^R(11,e)^R(25,e),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[i]+W[i])|0,S0=R(2,a)^R(13,a)^R(22,a),mj=(a&bb)^(a&c)^(bb&c),t2=(S0+mj)|0;h=g;g=f;f=e;e=(d+t1)|0;d=c;c=bb;bb=a;a=(t1+t2)|0}
+   H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0}
+  return H.map(function(x){return ('00000000'+(x>>>0).toString(16)).slice(-8)}).join('');
+ };
+ // --- Bangkok date regardless of device timezone ---
+ window.fbBkkISO=function(d){d=d||new Date();try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}catch(e){var t=new Date(d.getTime()+7*3600000);return t.toISOString().slice(0,10)}};
+ // --- battery / CPU: skip background polling while app is hidden ---
+ var _si=window.setInterval;
+ window.setInterval=function(fn,ms){var a=[].slice.call(arguments,2);if(typeof fn!=='function')return _si.apply(window,arguments);
+  return _si.call(window,function(){if(document.hidden)return;return fn.apply(this,a)},ms)};
+ document.addEventListener('visibilitychange',function(){if(!document.hidden){setTimeout(function(){try{if(navigator.onLine&&typeof cloudPoll==='function')cloudPoll()}catch(e){}},300)}});
+ window.addEventListener('online',function(){try{if(typeof cloudPoll==='function')cloudPoll()}catch(e){}});
+ // --- print without popups (works on iOS Safari / Android Chrome / LINE in-app) ---
+ window.fbPrintHTML=function(html){
+  var old=document.getElementById('fbPrintFrame');if(old)old.remove();
+  var f=document.createElement('iframe');f.id='fbPrintFrame';f.setAttribute('aria-hidden','true');
+  f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(f);var d=f.contentWindow.document;d.open();d.write(html);d.close();
+  setTimeout(function(){try{f.contentWindow.focus();f.contentWindow.print()}catch(e){try{window.print()}catch(_){}}},250);
+  setTimeout(function(){try{f.remove()}catch(e){}},60000);
+ };
+})();
+</script>
+
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>F&B Manpower</title>
@@ -208,6 +260,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 @media print{.hotel-compare-card,.hotel-compare-table{box-shadow:none}.hotel-compare-logo{background:#fff}}
 @keyframes dualGrow{from{transform:scaleX(.08);opacity:.2}to{transform:scaleX(1);opacity:1}}
 
+</style>
 <style id="v23-multi-source-css">
 .v23-selected{margin:10px 0;padding:12px;border:1px solid #cfe3f3;border-radius:16px;background:#f7fbff}
 .v23-selected-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
@@ -219,7 +272,6 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 .v23-request-source{margin-top:8px;padding:9px 11px;border-radius:12px;background:#f6fbff;border:1px dashed #cfe3f3}
 .v23-delete{border-color:#f2c6c6!important;color:#b42318!important;background:#fff7f7!important}
 .v23-delete:active{background:#fee!important}
-</style>
 </style>
 
 <style>
@@ -236,6 +288,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 <style id="v26-workforce-css">
 .v26-alert{margin-top:9px;padding:9px 11px;border-radius:12px;background:#fff8e8;border:1px dashed #e1c46f;color:#7c5b12;font-size:11px;line-height:1.5}.v26-alert strong{color:#8d6510}.v26-board{margin-top:14px;border:1px solid #d9e8f6;border-radius:16px;background:#fff;overflow:hidden}.v26-board summary{cursor:pointer;list-style:none;padding:13px 14px;font-weight:900;color:#194c82;background:linear-gradient(135deg,#f7fbff,#eef7ff)}.v26-board summary::-webkit-details-marker{display:none}.v26-board-body{padding:12px}.v26-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v26-source-card{border:1px solid #dfebf6;border-radius:14px;padding:11px;background:linear-gradient(135deg,#fff,#f8fbff)}.v26-source-card.is-destination{border-color:#c8dff4;box-shadow:0 6px 16px rgba(45,127,229,.07)}.v26-source-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.v26-source-name{font-weight:900;color:#214f80;font-size:12px}.v26-source-floor{font-size:10px;color:#7b91a5;margin-top:2px}.v26-source-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px}.v26-metric{background:#fff;border:1px solid #e5edf5;border-radius:10px;padding:7px;text-align:center}.v26-metric b{display:block;font-size:16px;color:#1f5a92}.v26-metric span{font-size:9px;color:#71879c;line-height:1.2}.v26-recommend{margin-top:8px;padding:8px 10px;border-radius:11px;background:#eef9f3;color:#1f6f4a;font-size:10px;font-weight:800}.v26-compact-note{margin-top:8px;font-size:10px;color:#667e95}.v26-selected-warning{margin-top:8px;padding:8px 10px;border-radius:10px;background:#fff1f1;border:1px solid #ffd2d2;color:#a52d33;font-size:10px}.v26-scope-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin:8px 0}.v26-scope-row select{min-height:42px}.v26-eligible{color:#1d7b52!important}.v26-ineligible{color:#a52d33!important}@media(max-width:760px){.v26-source-grid{grid-template-columns:1fr}.v26-source-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v26-scope-row{grid-template-columns:1fr}}
 
+</style>
 <style id="v27-attendance-css">
 .v27-attendance-card{margin-top:16px;border:1px solid #d7e7f5;border-radius:18px;padding:16px;background:linear-gradient(135deg,#fbfdff,#eef7ff)}
 .v27-attendance-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
@@ -256,7 +309,6 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 @media(max-width:600px){
   .v27-attendance-grid,.v27-attendance-row{grid-template-columns:1fr}
 }
-</style>
 </style>
 <style id="customer-forecast-css">
 .outlet-status-metrics{grid-template-columns:repeat(6,minmax(0,1fr))!important}
@@ -305,6 +357,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 .v34-line-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
 .request-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.request-type-card{padding:12px;border:1px solid #d8e7f5;border-radius:14px;background:#fbfdff;cursor:pointer}.request-type-card.active{border-color:#77b7ea;background:linear-gradient(135deg,#eef8ff,#fffaf0);box-shadow:0 7px 18px rgba(45,127,229,.08)}.request-type-card b{display:block;color:#1d4f82}.request-type-card span{display:block;margin-top:3px;font-size:11px;color:#71869b}
 @media(max-width:700px){.request-type-grid{grid-template-columns:1fr}}
+</style>
 <style id="live-manpower-easy-v2">
 .live-manpower-easy{margin-top:16px;border:1px solid #d7e7f5;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 10px 26px rgba(48,104,164,.07)}
 .live-easy-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px;background:linear-gradient(135deg,#f7fbff,#eef7ff)}
@@ -321,7 +374,6 @@ table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th{ba
 .live-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}.live-badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900}.live-badge.total{background:#eef5fb;color:#355f82}.live-badge.work{background:#e9f8ef;color:#1c7650}.live-badge.present{background:#eaf4ff;color:#2a67a1}.live-badge.off{background:#fff6e4;color:#91620d}.live-badge.leave{background:#fff0f0;color:#a33a43}.live-badge.pending{background:#f1f4f7;color:#687b8d}
 .live-detail{margin-top:10px;padding-top:9px;border-top:1px dashed #dce8f3;display:grid;gap:7px}.live-detail-row{display:grid;grid-template-columns:76px 1fr;gap:7px;align-items:start}.live-detail-label{font-size:10px;font-weight:900;color:#68809a}.live-names{font-size:10px;color:#45627c;line-height:1.55}.live-names b{color:#275b89}.live-footer{padding:10px 14px;border-top:1px solid #e5edf5;background:#fbfdff;font-size:10px;color:#71869b}.live-data-table{max-height:390px;overflow:auto}
 @media(max-width:850px){.live-manpower-grid{grid-template-columns:1fr}}@media(max-width:600px){.live-manpower-head{flex-direction:column}.live-detail-row{grid-template-columns:64px 1fr}}
-</style>
 </style>
 <style id="v36-all-staff-css">
 /* V36 All Staff Whereabouts — every employee remains visible even when an outlet is hidden/closed */
@@ -1047,9 +1099,7 @@ const LEGACY_ROUND_LABELS={morning:"ABF — American Breakfast",afternoon:"Lunch
 function serviceRoundLabel(id){return LEGACY_ROUND_LABELS[id]||"ไม่ระบุรอบ"}
 function serviceRoundNormalize(id){if(id==='morning'||id==='abf')return 'abf';if(id==='afternoon'||id==='lunch')return 'lunch';if(id==='evening'||id==='dinner')return 'dinner';return id} 
 function todayISO(){
- const d=new Date();
- const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
- return `${y}-${m}-${day}`;
+ return window.fbBkkISO();
 }
 function normalizeISODate(v){
  if(!v)return todayISO();
@@ -1906,7 +1956,7 @@ const V21_ALLOWED={
   operations:['supervisor','manager','admin','superadmin'],
   admin:['admin','superadmin'],
 };
-let v21CurrentUser=(()=>{try{return JSON.parse(sessionStorage.getItem('fb_manpower_session')||'null')}catch{return null}})();
+let v21CurrentUser=(()=>{try{return window.fbSessGet()}catch{return null}})();
 function v21UserPosition(u=v21CurrentUser){return String(u?.position||u?.roleLabel||'').trim().toUpperCase()}
 function v21IsManagerPosition(u=v21CurrentUser){const p=v21UserPosition(u);return /(?:MANAGER|MGR)$/.test(p)}
 function v21EffectiveRoleKey(u=v21CurrentUser){if(!u)return 'staff';if(['admin','superadmin'].includes(u.role))return u.role;return v21IsManagerPosition(u)?'manager':(u.role||'staff')}
@@ -2053,11 +2103,11 @@ function v21Admin(){
  <div class="card" style="margin-top:16px"><h3 style="margin-top:0">📜 Audit Log</h3><div class="audit-list">${v21AuditRows()}</div></div></main>`
 }
 
-async function v21Hash(s){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function v21Hash(s){try{if(window.crypto&&crypto.subtle&&window.isSecureContext!==false){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}return window.fbSha256Hex(s)}
 
-async function v21DoLogin(user,pass){const u=V21_AUTH_USERS[user];if(!u)return false;const hash=await v21Hash(pass);if(hash!==u.passwordHash)return false;v21CurrentUser={id:user,...u,loginAt:Date.now()};sessionStorage.setItem('fb_manpower_session',JSON.stringify(v21CurrentUser));currentHotel=u.hotel;page='dashboard';v21Audit('LOGIN',`เข้าสู่ระบบ ${u.roleLabel}`);render();toast(`Welcome ${u.name}`);return true}
+async function v21DoLogin(user,pass){const u=V21_AUTH_USERS[user];if(!u)return false;const hash=await v21Hash(pass);if(hash!==u.passwordHash)return false;v21CurrentUser={id:user,...u,loginAt:Date.now()};window.fbSessSet(v21CurrentUser);currentHotel=u.hotel;page='dashboard';v21Audit('LOGIN',`เข้าสู่ระบบ ${u.roleLabel}`);render();toast(`Welcome ${u.name}`);return true}
 
-function v21Logout(){if(v21CurrentUser)v21Audit('LOGOUT','ออกจากระบบ');v21CurrentUser=null;sessionStorage.removeItem('fb_manpower_session');currentHotel=null;page='login';render()}
+function v21Logout(){if(v21CurrentUser)v21Audit('LOGOUT','ออกจากระบบ');v21CurrentUser=null;window.fbSessDel();currentHotel=null;page='login';render()}
 
 const FNB_OP_KEY='baiyoke_fnb_outlet_operations_v1';
 function operationData(){try{return JSON.parse(localStorage.getItem(FNB_OP_KEY)||'[]')}catch{return []}}
@@ -2103,7 +2153,7 @@ function operationTeamLabel(outlet,round){return String(outlet||'').startsWith('
 function operationRoundsForOutlet(outletId){return String(outletId).startsWith('ibf')?['abf']:['abf','lunch','dinner']}
 function operationOutlets(hotel){return availableOutlets(hotel).filter(o=>outletEmployees(hotel,o.id).length>0||['market','bsr76','bsr78','stella','ibf81','ibf76','ibf78','crystal','rooftop','balcony','coffee','minigolf','banquet'].includes(o.id))}
 
-function v21Render(){if(OPS_UI_LOCK && page==='operations' && document.getElementById('app')?.querySelector('.v37-operations-page'))return;if(!v21CurrentUser){page='login';$('app').innerHTML=v21LoginPage();return}if(!currentHotel&&!v21CanHotelSwitch())currentHotel=v21CurrentUser.hotel;if(!v21CanPage(page))page='dashboard';let body=page==='select'?selectPage():page==='dashboard'?v21Dashboard():page==='dailyWork'?dailyWorkPage():page==='admin'?v21Admin():page==='employees'?employees():page==='operations'?operationsPage():page==='inbox'?inboxPage():page==='request'?requestPage():page==='movement'?movementPage():page==='ot'?otPage():page==='reports'?reports():v21Dashboard();$('app').innerHTML=body;if(page==="movement"){renderMovementEmployeePicker();const mh=$("m_toHotel"),mo=$("m_toOutlet");const rq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;const refreshDest=()=>{if(!mh||!mo)return;const selected=rq?.toOutlet||'';mo.innerHTML=availableOutlets(mh.value).map((o,i)=>`<option value="${o.id}" ${selected===o.id||(!selected&&i===0)?'selected':''}>${o.name} • ${o.floor}</option>`).join('')};mh?.addEventListener('change',refreshDest);refreshDest();}
+function v21Render(){if(OPS_UI_LOCK && page==='operations' && document.getElementById('app')?.querySelector('.v37-operations-page'))return;if(!v21CurrentUser){page='login';$('app').innerHTML=v21LoginPage();return}if(!currentHotel&&(!v21CanHotelSwitch()||page!=='select'))currentHotel=v21CurrentUser.hotel||'baiyoke';if(!v21CanPage(page))page='dashboard';let body=page==='select'?selectPage():page==='dashboard'?v21Dashboard():page==='dailyWork'?dailyWorkPage():page==='admin'?v21Admin():page==='employees'?employees():page==='operations'?operationsPage():page==='inbox'?inboxPage():page==='request'?requestPage():page==='movement'?movementPage():page==='ot'?otPage():page==='reports'?reports():v21Dashboard();$('app').innerHTML=body;if(page==="movement"){renderMovementEmployeePicker();const mh=$("m_toHotel"),mo=$("m_toOutlet");const rq=window.pendingRequestId?DATA.requests.find(x=>x.id===window.pendingRequestId):null;const refreshDest=()=>{if(!mh||!mo)return;const selected=rq?.toOutlet||'';mo.innerHTML=availableOutlets(mh.value).map((o,i)=>`<option value="${o.id}" ${selected===o.id||(!selected&&i===0)?'selected':''}>${o.name} • ${o.floor}</option>`).join('')};mh?.addEventListener('change',refreshDest);refreshDest();}
 if(page==="dashboard"){const rs=$("fnbBoardRound");if(rs)rs.addEventListener("change",()=>{window.fnbBoardRound=rs.value;render()});document.querySelectorAll("[data-fnb-round]").forEach(b=>b.addEventListener("click",()=>{window.fnbBoardRound=b.dataset.fnbRound||"dinner";render()}));}
 if(page==="employees"){const d=$("mp_date"),o=$("mp_outlet");if(d&&o){const refresh=()=>{window.manpowerFocus={hotel:currentHotel,outlet:o.value,date:d.value};v21Render()};d.addEventListener('change',refresh);o.addEventListener('change',refresh);document.querySelectorAll('select[id^="dayStatus_"]').forEach(sel=>sel.addEventListener('change',()=>{const idx=sel.id.split('_')[1],lt=$("dayLeave_"+idx),att=$("dayAttendance_"+idx);if(lt)lt.disabled=sel.value!=='leave';if(att){if(sel.value==='working'&&!att.value)att.value='present';if(sel.value!=='working'){att.value='';att.classList.remove('senior-att-present');att.classList.remove('senior-att-exception')}}}));document.querySelectorAll('select[id^="dayAttendance_"]').forEach(sel=>sel.addEventListener('change',()=>{sel.classList.toggle('senior-att-present',sel.value==='present');sel.classList.toggle('senior-att-exception',!!sel.value&&sel.value!=='present')}));}}
 if(page==="operations"){const od=$("ops_start"),on=$("ops_days");od?.addEventListener("change",()=>{window.opsFocusDate=od.value||todayISO();window.opsDays=+(on?.value||7);render()});on?.addEventListener("change",()=>{window.opsFocusDate=od?.value||window.opsFocusDate||todayISO();window.opsDays=+(on.value||7);render()});}
@@ -4543,7 +4593,6 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   window.__FNB_RELEASE__={version:V,workflow:'no-bounce movement hard lock; source outlet cards first; selected outlet only reveals employees; tap employee saves immediately; scroll preserved; background renders ignored; refresh only when movement/request data actually changes',coffeeShop24H:true,autoOpenAll:true,realtime:'record delta + protected movement; no full-page rerender while assigning',concurrencyTarget:30};
 })();
 </script>
-</body></html>
 
 
 <style id="v75-movement-final-css">
@@ -4624,10 +4673,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
  function print75(){
    const r=getRequest();if(!r)return;
    const txt=lineText75(r).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-   const w=window.open('','_blank','noopener,noreferrer,width=900,height=700');
-   if(!w){toast('เบราว์เซอร์บล็อกหน้าพิมพ์ • ใช้ “คัดลอก” หรือ “ส่ง LINE” แทน','warn');return;}
-   w.document.write(`<html><head><title>F&B Manpower Assignment</title><style>body{font-family:Tahoma,Arial,sans-serif;padding:28px;font-size:16px;line-height:1.6}h1{color:#194c82;font-size:24px}pre{white-space:pre-wrap;font-family:inherit}</style></head><body><h1>F&B Manpower Assignment</h1><pre>${txt.replace(/<br>/g,'\n')}</pre><script>window.onload=function(){window.print();setTimeout(function(){window.close()},400)}<\/script></body></html>`);
-   w.document.close();
+   window.fbPrintHTML(`<html><head><meta charset="utf-8"><title>F&B Manpower Assignment</title><style>body{font-family:Tahoma,Arial,sans-serif;padding:28px;font-size:16px;line-height:1.6}h1{color:#194c82;font-size:24px}pre{white-space:pre-wrap;font-family:inherit}</style></head><body><h1>F&B Manpower Assignment</h1><pre>${txt.replace(/<br>/g,'\n')}</pre></body></html>`);
  }
  function sendLine75(){
    const r=getRequest();if(!r)return;const text=document.getElementById('v75ShareText')?.value||lineText75(r);const url='https://line.me/R/msg/text/?'+encodeURIComponent(text);window.open(url,'_blank');
@@ -4742,3 +4788,14 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
 </script>
 
 <!-- V79 assignment explicit-save approval hardening -->
+<style id="v80-mobile-header-fix">
+@media(max-width:760px){
+ .header-inner{flex-wrap:wrap!important;row-gap:8px}
+ .session-bar{flex:1 1 100%!important;flex-wrap:wrap!important;justify-content:flex-start;max-width:100%;min-width:0}
+ .session-bar .user-badge{max-width:100%!important;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .session-bar .btn{flex:1 1 calc(50% - 6px)}
+}
+@supports(padding:max(0px)){.header{padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}}
+</style>
+</body>
+</html>
