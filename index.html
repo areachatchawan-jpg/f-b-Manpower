@@ -3182,7 +3182,8 @@ window.openOTEditor=function(doc,mode='edit'){
 
 <style id="v47-operations-only-close-edit-css">
 .v47-ops-row-actions{display:grid;grid-template-columns:1fr;gap:7px;margin-top:7px}.v47-ops-row-actions .btn{min-height:44px}
-@media(min-width:701px){.v47-ops-row-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.v47-ops-row-actions .btn{min-width:120px}}
+@media(min-width:701px){.v47-ops-row-actions{grid-template-columns:1fr}.v47-ops-row-actions .btn{min-width:0;width:100%;white-space:normal}}
+.v47-ops-row-actions .btn-success{background:#1f9d5b;color:#fff;border-color:#1f9d5b}
 </style>
 <script id="v48-bangkok-auto-open-all-active-only-close-edit">
 (function(){
@@ -3228,7 +3229,8 @@ window.openOTEditor=function(doc,mode='edit'){
  }
  function rowActions(hotel,outlet,date,round,st){
    const edit='<button type="button" class="btn btn-light" data-v47-edit="1" data-hotel="'+esc(hotel)+'" data-outlet="'+esc(outlet)+'" data-date="'+esc(date)+'" data-round="'+esc(round)+'">✏️ ลูกค้า / กำลังพล</button>';
-   const close=st==='open'?'<button type="button" class="btn btn-danger" data-v47-close="1" data-hotel="'+esc(hotel)+'" data-outlet="'+esc(outlet)+'" data-date="'+esc(date)+'" data-round="'+esc(round)+'">🔴 ปิดรอบ</button>':'';
+   const attrs=' data-hotel="'+esc(hotel)+'" data-outlet="'+esc(outlet)+'" data-date="'+esc(date)+'" data-round="'+esc(round)+'"';
+   const close=st==='closed'?'<button type="button" class="btn btn-success" data-v47-open="1"'+attrs+'>🟢 เปิดรอบอีกครั้ง</button>':'<button type="button" class="btn btn-danger" data-v47-close="1"'+attrs+'>🔴 '+(st==='planned'?'วางแผนปิด':'ปิดรอบ')+'</button>';
    return '<div class="v47-ops-row-actions">'+edit+close+'</div>';
  }
  function rowHtml(hotel,outlet,date,round,desktop){const r=view(hotel,outlet,date,round),st=r.status,key=operationKey(hotel,outlet,date,round),meta=r.start+'–'+r.end+' • กำลังพล '+r.required+' คน • ลูกค้า '+r.guestActual.toLocaleString('th-TH')+' คน';return '<div class="'+(desktop?'v31-round-card':'v37-round-row')+' '+opStatusClass(st)+'" data-v47-row-key="'+esc(key)+'"><div>'+(desktop?'<div class="v31-round-top"><span class="v31-round-title">'+esc(serviceRoundLabel(round))+'</span><span class="v31-status-chip '+opStatusClass(st)+'">'+esc(label(st))+'</span></div>':'<div class="v37-round-name">'+esc(serviceRoundLabel(round))+'</div><span class="v31-status-chip '+opStatusClass(st)+'">'+esc(label(st))+'</span>')+'<div class="'+(desktop?'small v42-round-meta-desktop':'v37-round-meta')+'">'+esc(meta)+'</div></div>'+rowActions(hotel,outlet,date,round,st)+'</div>';}
@@ -3250,7 +3252,8 @@ window.openOTEditor=function(doc,mode='edit'){
    setTimeout(()=>wrap.querySelector('#v47_guest')?.focus(),30);
  };
  window.v47CloseRound=function(el){const hotel=el.dataset.hotel,outlet=el.dataset.outlet,date=el.dataset.date,round=el.dataset.round;try{const r=getOperation(hotel,outlet,date,round)||{},def=opRoundDefaults(round,hotel,outlet),rec={key:operationKey(hotel,outlet,date,round),hotel,outlet,date,round,status:'closed',start:r.start||def.start,end:r.end||def.end,required:Number(r.required||0),guestForecast:Number(r.guestForecast||0),guestActual:Number(r.guestActual||0),note:r.note||'',updatedAt:Date.now(),updatedBy:v21CurrentUser?.id||null};persist(rec);window.opsFocusDate=date;v47RefreshRow(hotel,outlet,date,round);toast('ปิดรอบแล้ว','ok')}catch(e){console.error(V+' close',e);toast('ปิดรอบไม่สำเร็จ: '+(e?.message||'Unknown error'))}};
- document.addEventListener('click',function(e){const ed=e.target.closest('[data-v47-edit]');if(ed){e.preventDefault();e.stopImmediatePropagation();window.v47OpenEditor(ed);return}const cl=e.target.closest('[data-v47-close]');if(cl){e.preventDefault();e.stopImmediatePropagation();window.v47CloseRound(cl);return}},true);
+ window.v47OpenRound=function(el){const hotel=el.dataset.hotel,outlet=el.dataset.outlet,date=el.dataset.date,round=el.dataset.round;try{const r=getOperation(hotel,outlet,date,round)||{},def=opRoundDefaults(round,hotel,outlet),rec={key:operationKey(hotel,outlet,date,round),hotel,outlet,date,round,status:'planned',start:r.start||def.start,end:r.end||def.end,required:Number(r.required||0),guestForecast:Number(r.guestForecast||0),guestActual:Number(r.guestActual||0),note:r.note||'',updatedAt:Date.now(),updatedBy:v21CurrentUser?.id||null};persist(rec);try{autoOpenAll()}catch(_){}window.opsFocusDate=date;v47RefreshRow(hotel,outlet,date,round);toast('เปิดรอบแล้ว • ระบบเปิดตามเวลาอัตโนมัติ','ok')}catch(e){console.error(V+' reopen',e);toast('เปิดรอบไม่สำเร็จ: '+(e?.message||'Unknown error'))}};
+ document.addEventListener('click',function(e){const op=e.target.closest('[data-v47-open]');if(op){e.preventDefault();e.stopImmediatePropagation();window.v47OpenRound(op);return}const ed=e.target.closest('[data-v47-edit]');if(ed){e.preventDefault();e.stopImmediatePropagation();window.v47OpenEditor(ed);return}const cl=e.target.closest('[data-v47-close]');if(cl){e.preventDefault();e.stopImmediatePropagation();window.v47CloseRound(cl);return}},true);
  window.operationsPage=renderOps;
  const oldRender=window.v21Render;window.v21Render=function(){const r=oldRender.apply(this,arguments);try{window.v47AutoOpenAll()}catch{}return r};
  setInterval(window.v47AutoOpenAll,10000);setTimeout(window.v47AutoOpenAll,150);
@@ -4428,7 +4431,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
 
   // V47 buttons are stable custom controls; add a lightweight double-tap guard.
   document.addEventListener('click',function(e){
-    const b=e.target?.closest?.('[data-v47-edit],[data-v47-close],[data-v45-edit],[data-v45-close]');
+    const b=e.target?.closest?.('[data-v47-edit],[data-v47-close],[data-v47-open],[data-v45-edit],[data-v45-close]');
     if(!b)return;if(b.__v70TapBusy){e.preventDefault();e.stopImmediatePropagation();return}b.__v70TapBusy=true;setTimeout(()=>{b.__v70TapBusy=false},450);
   },true);
 
