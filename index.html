@@ -4922,21 +4922,44 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   if(bucket==='movements'||bucket==='requests'){try{reconcile()}catch(e){}}
   return ok;
  };
- // The later cloudPoll override dropped operations; bring them back so a
- // closed round / guest count from another device shows up within one poll.
- const prevPoll=cloudPoll;
- const wrappedPoll=async function(){
-  const r=await prevPoll.apply(this,arguments);
+ // Earlier versions skipped the whole Cloud poll while the person was on a
+ // work page (งานประจำวัน, จัดคน, ขอคน, OT, พนักงาน, Admin, แผนเปิด-ปิด), so a
+ // phone left on those pages never received changes from the PC. Now data is
+ // ALWAYS pulled; only the screen redraw waits until it is safe.
+ let polling=false,lastEdit=0,lastTouch=0,lastRenderAt=Date.now();
+ const mark=e=>{const t=e.target;if(t&&t.closest&&t.closest('#loginUser,#loginPass'))return;lastEdit=Date.now()};
+ document.addEventListener('input',mark,true);document.addEventListener('change',mark,true);
+ ['pointerdown','touchstart','keydown','wheel'].forEach(ev=>document.addEventListener(ev,()=>{lastTouch=Date.now()},{capture:true,passive:true}));
+ try{const baseR=v21Render;v21Render=function(){lastRenderAt=Date.now();hideBanner();return baseR.apply(this,arguments)};window.v21Render=v21Render}catch(e){}
+ function banner(){let el=document.getElementById('v82SyncBanner');if(!el){el=document.createElement('button');el.id='v82SyncBanner';el.type='button';el.textContent='🔄 มีข้อมูลใหม่จากเครื่องอื่น — แตะเพื่ออัปเดตหน้าจอ';el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9999;max-width:calc(100% - 24px);padding:11px 16px;border:0;border-radius:999px;background:#194c82;color:#fff;font:700 14px/1.3 inherit;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;display:none';el.addEventListener('click',()=>{hideBanner();try{render()}catch(e){}});document.body.appendChild(el)}return el}
+ function hideBanner(){const el=document.getElementById('v82SyncBanner');if(el)el.style.display='none'}
+ function sig(){try{return JSON.stringify([DATA.requests,DATA.movements,DATA.ots,DATA.employees,DATA.otRequests,DATA.attendance||{}])+'|'+(localStorage.getItem(FNB_OP_KEY)||'')}catch{return String(Math.random())}}
+ function safeRedraw(){
+  if(document.hidden||typeof page==='undefined'||page==='login')return;
+  if(page==='movement')return;                       // movement screen refreshes itself on data change
+  const ae=document.activeElement?.tagName,typing=['INPUT','SELECT','TEXTAREA'].includes(ae);
+  const modal=!!document.getElementById('ops_modal')||(typeof OPS_UI_LOCK!=='undefined'&&OPS_UI_LOCK);
+  const viewOnly=['dashboard','inbox','reports','select'].includes(page);
+  const unsaved=lastEdit>lastRenderAt;
+  if(!typing&&!modal&&(viewOnly||(!unsaved&&Date.now()-lastTouch>4000))){try{render()}catch(e){console.warn('[V82 render]',e)}}
+  else banner().style.display='block';
+ }
+ const fullPoll=async function(){
+  if(polling||!navigator.onLine)return CLOUD_OK;polling=true;
   try{
-   if(navigator.onLine&&!(typeof OPS_UI_LOCK!=='undefined'&&OPS_UI_LOCK)&&!(typeof v38InteractiveViewBusy==='function'&&v38InteractiveViewBusy())){
-    const before=localStorage.getItem(FNB_OP_KEY)||'';
-    await cloudSyncOperations();
-    if(before!==(localStorage.getItem(FNB_OP_KEY)||'')&&document.visibilityState!=='hidden'&&typeof page!=='undefined'&&['operations','dashboard','dailyWork'].includes(page))render();
-   }
-  }catch(e){console.warn('[V81] ops poll',e)}
-  return r;
+   const before=sig();
+   for(const b of ['requests','movements','ots','employees','ot_requests']){try{await cloudSyncBucket(b)}catch(e){}}
+   try{await cloudSyncAttendance()}catch(e){}
+   if(!document.getElementById('ops_modal')){try{await cloudSyncOperations()}catch(e){}}
+   try{await cloudLoadOperationDefaults()}catch(e){}
+   try{await cloudLoadAdminConfig()}catch(e){}
+   try{reconcile()}catch(e){}
+   if(before!==sig())safeRedraw();
+   return CLOUD_OK;
+  }finally{polling=false}
  };
- cloudPoll=wrappedPoll;try{window.cloudPoll=wrappedPoll}catch{}
+ cloudPoll=fullPoll;try{window.cloudPoll=fullPoll}catch{}
+ window.__FNB_V82__={alwaysPull:true,build:'2026-10-30-v82'};
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
 })();
 </script>
