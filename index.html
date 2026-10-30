@@ -4862,8 +4862,8 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
  const NET={readOk:0,writeOk:0,writeErr:'',writeErrAt:0,readErr:'',readErrAt:0};window.__FNB_NET__=NET;
  const rawFetch=window.fetch.bind(window);
  window.fetch=function(u,o){o=o||{};const url=String((u&&u.url)||u||'');if(!url.includes('supabase.co/rest/'))return rawFetch(u,o);
-  const w=String(o.method||'GET').toUpperCase()!=='GET';const ac=new AbortController();const t=setTimeout(()=>ac.abort(),20000);
-  return rawFetch(u,{...o,signal:ac.signal}).then(r=>{clearTimeout(t);if(r.ok){if(w)NET.writeOk=Date.now();else NET.readOk=Date.now()}else{const m='HTTP '+r.status;if(w){NET.writeErr=m;NET.writeErrAt=Date.now()}else{NET.readErr=m;NET.readErrAt=Date.now()}}return r})
+  const w=String(o.method||'GET').toUpperCase()!=='GET';let bk='';try{bk=w?[...new Set(JSON.parse(o.body||'[]').map(x=>x.bucket))].join(','):''}catch(e){}const ac=new AbortController();const t=setTimeout(()=>ac.abort(),20000);
+  return rawFetch(u,{...o,signal:ac.signal}).then(r=>{clearTimeout(t);if(r.ok){if(w){NET.writeOk=Date.now();if(NET.badBuckets&&bk)delete NET.badBuckets[bk]}else NET.readOk=Date.now()}else{const m='HTTP '+r.status+(bk?' ['+bk+']':'');if(w){NET.writeErr=m;NET.badBuckets=Object.assign(NET.badBuckets||{},{[bk]:Date.now()});NET.writeErrAt=Date.now()}else{NET.readErr=m;NET.readErrAt=Date.now()}}return r})
    .catch(e=>{clearTimeout(t);const m=e&&e.name==='AbortError'?'หมดเวลา (20 วินาที)':String(e&&e.message||e);if(w){NET.writeErr=m;NET.writeErrAt=Date.now()}else{NET.readErr=m;NET.readErrAt=Date.now()}throw e})};
  // Unstick busy flags left behind by an interrupted request.
  let busySince={};
@@ -4987,10 +4987,10 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   const n=(DATA.employees||[]).length,h=(DATA.employees||[]).filter(e=>e.hotel===currentHotel).length;
   const last=CLOUD_STATE?.lastSync?new Date(CLOUD_STATE.lastSync).toLocaleTimeString('th-TH'):'-';
   const N=window.__FNB_NET__||{},tt=x=>x?new Date(x).toLocaleTimeString('th-TH'):'-';
-  const wbad=N.writeErrAt&&N.writeErrAt>(N.writeOk||0),rbad=N.readErrAt&&N.readErrAt>(N.readOk||0);
-  const health=(wbad||rbad)?`<br><b style="color:#b4413c">⚠️ ${wbad?'บันทึกขึ้น Cloud ไม่สำเร็จ: '+N.writeErr+' ('+tt(N.writeErrAt)+')':''}${wbad&&rbad?' • ':''}${rbad?'อ่าน Cloud ไม่สำเร็จ: '+N.readErr:''}</b>`:`<br>☁️ อ่าน Cloud ${tt(N.readOk)} • บันทึกขึ้น Cloud ${tt(N.writeOk)}`;
+  const wbad=!!(N.badBuckets&&Object.keys(N.badBuckets).length),rbad=N.readErrAt&&N.readErrAt>(N.readOk||0);
+  const health=(wbad||rbad)?`<br><b style="color:#b4413c">⚠️ ${wbad?'บันทึกขึ้น Cloud ไม่สำเร็จ: '+N.writeErr+' ('+tt(N.writeErrAt)+') • ส่วนที่ติด: '+Object.keys(N.badBuckets||{}).join(', '):''}${wbad&&rbad?' • ':''}${rbad?'อ่าน Cloud ไม่สำเร็จ: '+N.readErr:''}</b>`:`<br>☁️ อ่าน Cloud ${tt(N.readOk)} • บันทึกขึ้น Cloud ${tt(N.writeOk)}`;
   const today=typeof todayISO==='function'?todayISO():'';const att=Object.values(DATA.attendance||{}).filter(a=>a.date===today).length;const closed=operationData().filter(o=>o.date===today&&o.status==='closed').length;
-  el.innerHTML=`เวอร์ชัน 2026-10-30-v84 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v85 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
  }
  setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
