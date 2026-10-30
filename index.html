@@ -3485,7 +3485,7 @@ window.openOTEditor=function(doc,mode='edit'){
  document.addEventListener('click',e=>{const el=e.target.closest?.('[data-action]');if(!el)return;const a=el.dataset.action;if(a==='clearSelectedEmployees'&&page==='movement'){e.preventDefault();e.stopImmediatePropagation();movementSelectedCodes.clear();try{renderMovementEmployeePicker()}catch{};toast('ถอนรายชื่อที่เลือกทั้งหมดแล้ว','warn');}},true);
 
  // Realtime record-delta listener. Use payload record immediately and let the existing sync reconcile durable state.
- function bindRealtimeDelta(){try{const ch=(typeof FNB_RT!=='undefined'?FNB_RT:window.FNB_RT);if(!ch||ch.__v53deltaBound)return;ch.__v53deltaBound=true;ch.on('broadcast',{event:'data-change'},message=>{const p=message?.payload||{},r=p.record;if(!r||!p.bucket)return;try{if(p.bucket==='operations'){const a=operationData(),i=a.findIndex(x=>x.key===r.key),rt=Number(r.updatedAt||0),lt=Number(i>=0?a[i]?.updatedAt||0:0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);saveOperationData(a)}}else if(p.bucket==='requests'&&r.id){const a=DATA.requests||[],i=a.findIndex(x=>x.id===r.id),rt=Number(r.updatedAt||r.assignmentUpdatedAt||r.createdAt||0),lt=Number(i>=0?(a[i]?.updatedAt||a[i]?.assignmentUpdatedAt||a[i]?.createdAt||0):0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);DATA.requests=a;localSave(REQUEST_STORE_KEY,a)}}else if(p.bucket==='movements'&&r.id){const a=DATA.movements||[],i=a.findIndex(x=>x.id===r.id),rt=Number(r.updatedAt||0),lt=Number(i>=0?a[i]?.updatedAt||0:0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);DATA.movements=a;localSave(MOVEMENT_STORE_KEY,a)}}else return;if(document.visibilityState!=='hidden'&&!(typeof v38InteractiveViewBusy==='function'&&v38InteractiveViewBusy()))render()}catch(e){console.warn(V+' realtime',e)}})}catch(e){console.warn(V+' bind delta',e)}}
+ function bindRealtimeDelta(){try{const ch=(typeof FNB_RT!=='undefined'?FNB_RT:window.FNB_RT);if(!ch||ch.__v53deltaBound)return;ch.__v53deltaBound=true;ch.on('broadcast',{event:'data-change'},message=>{const p=message?.payload||{},r=p.record;if(!r||!p.bucket)return;try{if(p.bucket==='operations'){const a=operationData(),i=a.findIndex(x=>x.key===r.key),rt=Number(r.updatedAt||0),lt=Number(i>=0?a[i]?.updatedAt||0:0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);saveOperationData(a)}}else if(p.bucket==='requests'&&r.id){const a=DATA.requests||[],i=a.findIndex(x=>x.id===r.id),rt=Number(r.updatedAt||r.assignmentUpdatedAt||r.createdAt||0),lt=Number(i>=0?(a[i]?.updatedAt||a[i]?.assignmentUpdatedAt||a[i]?.createdAt||0):0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);DATA.requests=a;localSave(REQUEST_STORE_KEY,a)}}else if(p.bucket==='movements'&&r.id&&(r.deleted||r._deleted)){try{window.fnbMvTombAdd&&window.fnbMvTombAdd(r,true)}catch{}DATA.movements=(DATA.movements||[]).filter(x=>x.id!==r.id);localSave(MOVEMENT_STORE_KEY,DATA.movements);try{window.fnbMvKnownReset&&window.fnbMvKnownReset()}catch{}}else if(p.bucket==='movements'&&r.id){if(window.fnbMvIsTombed&&window.fnbMvIsTombed(r))return;const a=DATA.movements||[],i=a.findIndex(x=>x.id===r.id),rt=Number(r.updatedAt||0),lt=Number(i>=0?a[i]?.updatedAt||0:0);if(i<0||rt>=lt){if(i>=0)a[i]=r;else a.push(r);DATA.movements=a;localSave(MOVEMENT_STORE_KEY,a)}}else return;try{window.fnbReconcileAssignments&&window.fnbReconcileAssignments()}catch{}if(document.visibilityState!=='hidden'&&!(typeof v38InteractiveViewBusy==='function'&&v38InteractiveViewBusy()))render()}catch(e){console.warn(V+' realtime',e)}})}catch(e){console.warn(V+' bind delta',e)}}
  setTimeout(bindRealtimeDelta,600);setInterval(bindRealtimeDelta,2500);
 
  // When returning to movement, ensure the fixed destination + picker are refreshed after render.
@@ -4849,6 +4849,97 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
 })();
 </script>
 
+<!-- V81 multi-device sync hardening: movement tombstones + assignment reconciliation -->
+<script id="v81-multidevice-sync">
+(function(){
+ const TOMB_KEY='fnb_mv_tombstones_v1',KEEP=45*864e5;
+ const ts=x=>Number(x?.updatedAt||x?.deletedAt||x?.createdAt||0);
+ function load(){try{return JSON.parse(localStorage.getItem(TOMB_KEY)||'{}')||{}}catch{return {}}}
+ function save(t){const now=Date.now();for(const k of Object.keys(t))if(now-Number(t[k]?.at||0)>KEEP)delete t[k];try{localStorage.setItem(TOMB_KEY,JSON.stringify(t))}catch{}}
+ function tombAdd(m,sent){const id=cloudId(m),now=Date.now(),t=load();const at=Math.max(now,ts(m));t[id]={at,sent:!!sent,payload:{...m,deleted:true,_deleted:true,deletedAt:at,updatedAt:at}};save(t)}
+ function isTombed(m){const t=load()[cloudId(m)];return !!t&&Number(t.at)>=ts(m)}
+ let KNOWN=new Map((DATA.movements||[]).map(m=>[cloudId(m),m]));
+ const knownReset=()=>{KNOWN=new Map((DATA.movements||[]).map(m=>[cloudId(m),m]))};
+ window.fnbMvTombAdd=tombAdd;window.fnbMvIsTombed=isTombed;window.fnbMvKnownReset=knownReset;
+
+ // Deleted / tombstoned movements never come back from Cloud merges.
+ const oldFilter=filterFreshMovements;
+ filterFreshMovements=function(arr,ids){return oldFilter(arr,ids).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m))};
+
+ // Any movement that disappears between saves is a deletion -> tombstone it.
+ const oldSaveMv=saveMovements;
+ saveMovements=function(){
+  const cur=new Map((DATA.movements||[]).map(m=>[cloudId(m),m])),t=load();let ch=false;
+  KNOWN.forEach((m,id)=>{if(!cur.has(id)){const now=Date.now();t[id]={at:now,sent:false,payload:{...m,deleted:true,_deleted:true,deletedAt:now,updatedAt:now}};ch=true}});
+  cur.forEach((m,id)=>{if(t[id]){delete t[id];ch=true;m.updatedAt=Date.now()+1}});   // re-assigned after a withdraw
+  if(ch)save(t);KNOWN=cur;
+  const r=oldSaveMv.apply(this,arguments);
+  try{reconcile()}catch{}
+  return r;
+ };
+
+ async function pushTombs(){
+  const t=load(),pend=Object.entries(t).filter(([,v])=>!v.sent);if(!pend.length)return;
+  await cloudUpsert('movements',pend.map(([,v])=>v.payload));
+  const t2=load();pend.forEach(([id])=>{if(t2[id])t2[id].sent=true});save(t2);
+  try{pend.forEach(([,v])=>fnbRTBroadcast('movements',v.payload.id,v.payload))}catch{}
+ }
+
+ // Request assignment lists follow the real movement list, so two devices
+ // assigning people to the same request at once never lose anyone.
+ function reconcile(){
+  const by=new Map();(DATA.movements||[]).forEach(m=>{if(!m.requestId||m.deleted||m._deleted)return;if(!by.has(m.requestId))by.set(m.requestId,[]);by.get(m.requestId).push(m)});
+  const touched=new Set([...by.keys(),...Object.values(load()).map(v=>v.payload?.requestId).filter(Boolean)]);
+  let changed=false;
+  (DATA.requests||[]).forEach(r=>{
+   if(!touched.has(r.id)||!['accepted','assigned'].includes(r.status))return;
+   const mv=by.get(r.id)||[],codes=[...new Set(mv.map(m=>m.code))];
+   const cur=[...new Set(r.assignedCodes||[])];
+   const same=cur.length===codes.length&&codes.every(c=>cur.includes(c));
+   const total=Number((typeof requestIsCasual==='function'&&requestIsCasual(r))?(r.casualPeople||r.qty||0):(r.qty||0));
+   const st=total>0&&codes.length>=total?'assigned':'accepted';
+   if(same&&r.status===st)return;
+   r.assignedCodes=codes;
+   r.assignmentSources=[...new Map(mv.map(m=>[`${m.fromHotel}||${m.fromOutlet||''}`,{hotel:m.fromHotel,outlet:m.fromOutlet||null}])).values()];
+   if(r.status!==st){r.status=st;if(st==='assigned'&&!r.assignedAt)r.assignedAt=Date.now()}
+   changed=true;
+  });
+  if(changed){localSave(REQUEST_STORE_KEY,DATA.requests);try{updateCloudSnapshots()}catch{}}
+  return changed;
+ }
+ window.fnbReconcileAssignments=reconcile;
+
+ const prevSync=cloudSyncBucket;
+ cloudSyncBucket=async function(bucket){
+  if(bucket==='movements'){try{await pushTombs()}catch(e){console.warn('[V81] tombstones',e)}}
+  const ok=await prevSync.apply(this,arguments);
+  if(bucket==='movements'){
+   const before=(DATA.movements||[]).length;
+   DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));
+   if(DATA.movements.length!==before)localSave(MOVEMENT_STORE_KEY,DATA.movements);
+   knownReset();
+  }
+  if(bucket==='movements'||bucket==='requests'){try{reconcile()}catch(e){}}
+  return ok;
+ };
+ // The later cloudPoll override dropped operations; bring them back so a
+ // closed round / guest count from another device shows up within one poll.
+ const prevPoll=cloudPoll;
+ const wrappedPoll=async function(){
+  const r=await prevPoll.apply(this,arguments);
+  try{
+   if(navigator.onLine&&!(typeof OPS_UI_LOCK!=='undefined'&&OPS_UI_LOCK)&&!(typeof v38InteractiveViewBusy==='function'&&v38InteractiveViewBusy())){
+    const before=localStorage.getItem(FNB_OP_KEY)||'';
+    await cloudSyncOperations();
+    if(before!==(localStorage.getItem(FNB_OP_KEY)||'')&&document.visibilityState!=='hidden'&&typeof page!=='undefined'&&['operations','dashboard','dailyWork'].includes(page))render();
+   }
+  }catch(e){console.warn('[V81] ops poll',e)}
+  return r;
+ };
+ cloudPoll=wrappedPoll;try{window.cloudPoll=wrappedPoll}catch{}
+ try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
+})();
+</script>
 <!-- V79 assignment explicit-save approval hardening -->
 <style id="v80-mobile-header-fix">
 @media(max-width:760px){
