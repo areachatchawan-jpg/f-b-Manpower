@@ -4960,6 +4960,17 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
  };
  cloudPoll=fullPoll;try{window.cloudPoll=fullPoll}catch{}
  window.__FNB_V82__={alwaysPull:true,build:'2026-10-30-v82'};
+ // Version + data footprint line so two devices can be compared at a glance,
+ // and a one-tap "reload from Cloud" for a device holding stale local data.
+ function footer(){
+  let el=document.getElementById('v82Build');
+  if(!el){el=document.createElement('div');el.id='v82Build';el.style.cssText='text-align:center;font-size:11px;color:#7a8794;padding:14px 12px calc(70px + env(safe-area-inset-bottom,0px));line-height:1.6';document.body.appendChild(el);
+   el.addEventListener('click',e=>{if(!e.target.closest('[data-v82-reset]'))return;if(!confirm('โหลดข้อมูลพนักงาน/คำขอ ในเครื่องนี้ใหม่จาก Cloud ?\n(ข้อมูลบน Cloud ไม่ถูกลบ)'))return;try{['baiyoke_fnb_manpower_employees_v36_pending',EMPLOYEE_STORE_KEY,REQUEST_STORE_KEY,MOVEMENT_STORE_KEY].forEach(k=>localStorage.removeItem(k))}catch{}location.reload()})}
+  const n=(DATA.employees||[]).length,h=(DATA.employees||[]).filter(e=>e.hotel===currentHotel).length;
+  const last=CLOUD_STATE?.lastSync?new Date(CLOUD_STATE.lastSync).toLocaleTimeString('th-TH'):'-';
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v82 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+ }
+ setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
 })();
 </script>
