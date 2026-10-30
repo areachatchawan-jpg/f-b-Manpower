@@ -821,14 +821,14 @@ function v29ShowLinePreview(text,title='รายงาน LINE',requestId=null)
  if(inline){
    window.v29LineTexts=window.v29LineTexts||{};
    if(requestId)window.v29LineTexts[requestId]=text;
-   inline.innerHTML=`<div class="v34-line-title">${title}</div><div class="v34-line-preview">${safe}</div><div class="v34-line-actions"><button class="v29-line-btn" type="button" data-action="sendInlineLine" data-line-id="${requestId||''}">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyInlineLine" data-line-id="${requestId||''}">คัดลอกข้อความ</button></div>`;
+   inline.innerHTML=`<div class="v34-line-title">${title}</div><div class="v34-line-preview">${safe}</div><div class="v34-line-actions"><button class="v29-line-btn" type="button" data-action="sendInlineLine" data-line-id="${requestId||''}">💬 ส่งเข้า LINE</button><button class="v29-line-btn secondary" type="button" data-action="copyInlineLine" data-line-id="${requestId||''}">คัดลอกข้อความ</button></div>`;
    inline.hidden=false;
    inline.dataset.active='1';
    inline.scrollIntoView({behavior:'smooth',block:'nearest'});
  }else{
    const host=document.getElementById('v29LinePreviewHost');
    if(!host)return;
-   host.innerHTML=`<div class="v29-line-box"><b>${title}</b><div class="v29-line-preview">${safe}</div><div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap"><button class="v29-line-btn" type="button" data-action="sendCurrentLine">ส่งผ่าน LINE / Share</button><button class="v29-line-btn secondary" type="button" data-action="copyCurrentLine">คัดลอกข้อความ</button></div></div>`;
+   host.innerHTML=`<div class="v29-line-box"><b>${title}</b><div class="v29-line-preview">${safe}</div><div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap"><button class="v29-line-btn" type="button" data-action="sendCurrentLine">💬 ส่งเข้า LINE</button><button class="v29-line-btn secondary" type="button" data-action="copyCurrentLine">คัดลอกข้อความ</button></div></div>`;
  }
  window.v29CurrentLineText=text;
  window.v29CurrentLineRequestId=requestId||null;
@@ -1367,7 +1367,7 @@ function liveManpowerBoardHtml(hotel,date=todayISO()){
  const sent=all.reduce((n,s)=>n+s.sent,0),incoming=DATA.movements.filter(m=>m.toHotel===hotel&&m.date===date).length;
  const saved=localStorage.getItem(`fnb_daily_manpower_line_${hotel}_${date}`)?'บันทึก LINE ล่าสุดแล้ว':'ยังไม่ได้บันทึก LINE';
  return `<section class="live-manpower-easy">
-  <div class="live-easy-head"><div><div class="live-easy-title">🟢 กำลังพลออนไลน์ • ${hotelName(hotel)}</div><div class="live-easy-sub">ดูภาพรวมวันนี้แบบสั้น ๆ • รายชื่อจะเปิดเมื่อกด “รายละเอียด”</div></div><div class="live-manpower-actions"><span class="cloud-status ${CLOUD_OK?'online':'offline'}">● ${CLOUD_OK?'Online':'Offline'}</span><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${date}">LINE รายงาน</button><button class="btn btn-primary" data-action="nav" data-page="employees">เช็กกำลังคน</button></div></div>
+  <div class="live-easy-head"><div><div class="live-easy-title">🟢 กำลังพลออนไลน์ • ${hotelName(hotel)}</div><div class="live-easy-sub">ดูภาพรวมวันนี้แบบสั้น ๆ • รายชื่อจะเปิดเมื่อกด “รายละเอียด”</div></div><div class="live-manpower-actions"><span class="cloud-status ${CLOUD_OK?'online':'offline'}">● ${CLOUD_OK?'Online':'Offline'}</span><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${date}">💬 ส่ง LINE</button><button class="btn btn-primary" data-action="nav" data-page="employees">เช็กกำลังคน</button></div></div>
   <div class="live-easy-kpis"><div class="live-easy-kpi"><b>${total}</b><span>พนักงานทั้งหมด</span></div><div class="live-easy-kpi"><b>${work}</b><span>ทำงานตามแผน</span></div><div class="live-easy-kpi"><b>${present}</b><span>มาจริง</span></div><div class="live-easy-kpi"><b>${off+leave}</b><span>หยุด + ลา</span></div><div class="live-easy-kpi"><b>${pending}</b><span>ยังไม่เช็ก</span></div></div>
   <div class="live-easy-grid">${outs.map((o,i)=>{const s=all[i];return `<article class="live-easy-card"><div class="live-easy-card-top"><div><div class="live-easy-name">${o.name}</div><div class="live-easy-floor">${o.floor}</div></div><div class="live-easy-count">${s.working} คน</div></div><div class="live-easy-status"><span class="w">ทำงาน<br>${s.working}</span><span class="p">มาจริง<br>${s.present}</span><span class="o">หยุด<br>${s.off}</span><span class="l">ลา<br>${s.leave}</span></div><div class="live-easy-actions"><span class="pill pill-blue">ส่งช่วย ${s.sent}</span>${s.unconfirmed?`<span class="pill pill-gold">ยังไม่เช็ก ${s.unconfirmed}</span>`:`<span class="pill pill-blue">เช็กครบ</span>`}<button class="btn btn-light" data-action="manageOutletRoster" data-hotel="${hotel}" data-outlet="${o.id}" data-date="${date}">เช็กวันนี้</button></div><details class="live-easy-detail"><summary>ดูรายชื่อใน ${o.name}</summary><div class="live-easy-names"><b>มาทำงาน:</b> ${s.workingNames.length?s.workingNames.join(' • '):'-'}<br><b>มาจริง:</b> ${s.presentNames.length?s.presentNames.join(' • '):'ยังไม่มี'}<br><b>หยุด:</b> ${s.offNames.length?s.offNames.join(' • '):'-'}<br><b>ลา:</b> ${s.leaveNames.length?s.leaveNames.join(' • '):'-'}<br><b>ยังไม่เช็ก:</b> ${s.unconfirmedNames.length?s.unconfirmedNames.join(' • '):'ครบแล้ว'}</div></details></article>`}).join('')}</div>
   ${allStaffBoardHtml(hotel,date,window.fnbBoardRound||'dinner')}
@@ -1419,7 +1419,7 @@ function employees(){
  ${liveManpowerBoardHtml(hotel,focusDate)}
  ${v21CanPage('admin')?`<div class="card"><div class="grid-2"><div><label>รหัสพนักงาน</label><input id="e_id" placeholder="BYK00130"></div><div><label>ชื่อ-นามสกุล</label><input id="e_name" placeholder="สมชาย ใจดี"></div><div><label>ตำแหน่ง</label><select id="e_role">${roleOptions()}</select></div><div><label>โรงแรมต้นสังกัด</label><select id="e_hotel"><option value="baiyoke">Baiyoke Sky</option><option value="queensland">Queensland</option></select></div><div><label>ห้องอาหารต้นสังกัด</label><select id="e_outlet">${outletOptions}</select></div><div><label>เวลาเข้างานหลัก</label><input id="e_shiftStart" type="time" value="07:00"></div><div><label>เวลาเลิกงานหลัก</label><input id="e_shiftEnd" type="time" value="16:00"></div><div><label>พัก / Break (ชม.)</label><input id="e_break" type="number" min="0" step="0.5" value="1"></div></div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addEmployee">＋ เพิ่มพนักงานเข้าห้องอาหาร</button></div>`:`<div class="card"><b>📋 Daily Manpower Control</b><div class="small" style="margin-top:4px">บัญชีนี้สามารถปรับสถานะ ทำงาน / หยุด / ลา รายวันได้ แต่การเพิ่ม-ลบพนักงานและแก้ Master ทำได้เฉพาะ Admin</div></div>`}
- <div class="v27-attendance-card"><div class="v27-attendance-head"><div><b style="font-size:17px;color:#194c82">✅ เช็กกำลังคนรายวัน / Daily Attendance</b><div class="small" style="margin-top:4px">เลือกวันย้อนหลัง / วันนี้ / วันล่วงหน้าได้ • วางแผนหยุด/ลาก่อนได้ และบันทึก “มาทำงานจริง” พร้อมเวลาเข้า–ออกเมื่อทราบ</div></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center"><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${focusDate}" style="padding:8px 10px;font-size:10px">LINE สรุปกำลังพล</button></div><span class="v27-attendance-badge actual">Cloud Sync • สถานะรายวันแยกซิงก์ข้ามอุปกรณ์</span></div><div class="v27-attendance-actions"><span class="pill pill-blue">แผนประจำวัน = หยุด / ลา / ทำงาน</span><span class="pill pill-gold">Actual = มาจริง / มาสาย / ไม่มา</span></div><div class="v27-attendance-note">💡 สำหรับวันล่วงหน้า ให้กำหนด “ทำงาน / หยุด / ลา” เป็นแผนไว้ก่อน ส่วน “มาทำงานจริง” ให้เช็กเมื่อถึงวันทำงานจริง ระบบ Workforce จะใช้ข้อมูล Actual ที่บันทึกแล้วเป็นฐาน และถ้ายังไม่มี Actual จะเตือนว่า “ยังไม่เช็ก”</div></div>
+ <div class="v27-attendance-card"><div class="v27-attendance-head"><div><b style="font-size:17px;color:#194c82">✅ เช็กกำลังคนรายวัน / Daily Attendance</b><div class="small" style="margin-top:4px">เลือกวันย้อนหลัง / วันนี้ / วันล่วงหน้าได้ • วางแผนหยุด/ลาก่อนได้ และบันทึก “มาทำงานจริง” พร้อมเวลาเข้า–ออกเมื่อทราบ</div></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center"><button class="btn btn-light" data-action="sendDailyManpowerLine" data-hotel="${hotel}" data-date="${focusDate}" style="padding:8px 10px;font-size:10px">💬 ส่งกำลังพลเข้า LINE</button></div><span class="v27-attendance-badge actual">Cloud Sync • สถานะรายวันแยกซิงก์ข้ามอุปกรณ์</span></div><div class="v27-attendance-actions"><span class="pill pill-blue">แผนประจำวัน = หยุด / ลา / ทำงาน</span><span class="pill pill-gold">Actual = มาจริง / มาสาย / ไม่มา</span></div><div class="v27-attendance-note">💡 สำหรับวันล่วงหน้า ให้กำหนด “ทำงาน / หยุด / ลา” เป็นแผนไว้ก่อน ส่วน “มาทำงานจริง” ให้เช็กเมื่อถึงวันทำงานจริง ระบบ Workforce จะใช้ข้อมูล Actual ที่บันทึกแล้วเป็นฐาน และถ้ายังไม่มี Actual จะเตือนว่า “ยังไม่เช็ก”</div></div>
  <div class="card" style="margin-top:16px"><div class="section-title" style="margin:0"><div><h3>กำลังคนประจำวัน + เช็กมาทำงานจริง</h3><div class="small">แก้ชื่อหลายคนต่อเนื่องได้ในหน้าเดียว • กดบันทึกทั้งหมดเมื่อครบ • จากนั้นอนุมัติครั้งเดียว</div></div></div><div class="grid-2" style="margin-top:12px"><div><label>วันที่ (ย้อนหลัง / วันนี้ / ล่วงหน้า)</label><input id="mp_date" type="date" value="${focusDate}"></div><div><label>ห้องอาหาร</label><select id="mp_outlet">${outletOptions}</select></div></div><div id="mp_snapshot" style="margin-top:12px">${manpowerSnapshotHtml(hotel,focusOutlet,focusDate,'สรุปกำลังคน')}</div>${attendanceBulkUi(hotel,focusOutlet,focusDate)}</div>
  <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:900;color:#194c82">📋 เปิด Employee Master ทั้งหมด (${DATA.employees.length} คน)</summary><div style="overflow:auto;margin-top:12px"><table><thead><tr><th>รหัส</th><th>ชื่อ / ตำแหน่ง</th><th>โรงแรม</th><th>ห้องอาหารต้นสังกัด</th><th>เวลาหลัก</th><th>สถานะวันนี้</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">ยังไม่มีรายชื่อ</td></tr>`}</tbody></table></div></details>
  </main>`;
@@ -1447,9 +1447,9 @@ function inboxPage(){
     ${canRejectRequest(x)?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" data-action="approveRequest" data-id="${x.id}">✓ อนุมัติคำขอ</button><button class="btn btn-danger" data-action="rejectRequest" data-id="${x.id}">✕ ไม่อนุมัติ</button></div>`:""}${canAccept?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:canAssign?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:12px">${mode==="sent"?"คำขอของฉัน":"พนักงานที่จัด: "+((x.assignedCodes||[]).join(", ")||"-")}</div>`}
     ${requestSourceSummaryHtml(x)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      <button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>
-      ${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}
-      ${x.status==="cancelled"?`<button class="v29-line-btn secondary" type="button" data-action="sendCancelLine" data-id="${x.id}">LINE ยกเลิก</button>`:''}
+      <button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">💬 ส่ง LINE</button>
+      ${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">💬 ส่งรายชื่อเข้า LINE</button>`:''}
+      ${x.status==="cancelled"?`<button class="v29-line-btn secondary" type="button" data-action="sendCancelLine" data-id="${x.id}">💬 แจ้งยกเลิกทาง LINE</button>`:''}
       ${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">🗑 ลบคำขอ</button>`:''}${canCancelRequest(x)&&x.status!=="rejected"?`<button class="btn btn-light" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:''}
       ${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}
       ${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}
@@ -1499,7 +1499,7 @@ function requestPage(){
  </div>
  <div id="requestManpowerSnapshot" style="margin-top:14px;display:grid;grid-template-columns:1fr;gap:10px"><div id="requestDestinationSnapshot"></div></div>
  <button class="btn btn-primary" style="margin-top:14px" data-action="addRequest">ส่งคำขอคนช่วย</button></div>
- <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ผู้ขอ</th><th>โรงแรม/ห้องอาหารปลายทาง</th><th>ประเภท</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th><th>สถานะ / ต้นทางจริง</th><th>จัดการ</th></tr></thead><tbody>${activeRequestList().map(x=>`<tr><td>${x.date||"-"}</td><td><b>${fnbEsc(x.createdByName||x.requesterHotel||'-')}</b><br><span class="small">${hotelName(x.requesterHotel||x.fromHotel||'-')}</span></td><td><b>${hotelName(x.toHotel)}</b><br><span class="small">${outletName(x.toHotel,x.toOutlet)}</span></td><td>${requestTypeLabel(x)}</td><td>${x.role||"-"}</td><td>${requestIsCasual(x)?x.casualPeople||0:x.qty}</td><td>${x.start}-${x.end}</td><td>${x.status}<br>${requestSourceBreakdown(x).filter(s=>s.people>0).map(s=>`${outletName(s.hotel,s.outlet)} ${s.people} คน`).join("<br>")||"-"}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">จัดคน</button>`:''}${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">🗑 ลบ</button>`:''}${canCancelRequest(x)&&x.status!=="rejected"?`<button class="btn btn-light" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ได้คนแล้ว</button>`:`-`}</div></td></tr>`).join("")||`<tr><td colspan="9" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
+ <div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>วันที่</th><th>ผู้ขอ</th><th>โรงแรม/ห้องอาหารปลายทาง</th><th>ประเภท</th><th>ตำแหน่ง</th><th>จำนวน</th><th>เวลา</th><th>สถานะ / ต้นทางจริง</th><th>จัดการ</th></tr></thead><tbody>${activeRequestList().map(x=>`<tr><td>${x.date||"-"}</td><td><b>${fnbEsc(x.createdByName||x.requesterHotel||'-')}</b><br><span class="small">${hotelName(x.requesterHotel||x.fromHotel||'-')}</span></td><td><b>${hotelName(x.toHotel)}</b><br><span class="small">${outletName(x.toHotel,x.toOutlet)}</span></td><td>${requestTypeLabel(x)}</td><td>${x.role||"-"}</td><td>${requestIsCasual(x)?x.casualPeople||0:x.qty}</td><td>${x.start}-${x.end}</td><td>${x.status}<br>${requestSourceBreakdown(x).filter(s=>s.people>0).map(s=>`${outletName(s.hotel,s.outlet)} ${s.people} คน`).join("<br>")||"-"}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">💬 LINE</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">💬 ส่งรายชื่อ</button>`:''}${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">🗑 ลบ</button>`:''}${canCancelRequest(x)&&x.status!=="rejected"?`<button class="btn btn-light" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">ได้คนแล้ว</button>`:`-`}</div></td></tr>`).join("")||`<tr><td colspan="9" class="empty">ยังไม่มีคำขอ</td></tr>`}</tbody></table></div>
 </main>`;
 }
 
@@ -1931,7 +1931,7 @@ OT รวมเดือนนี้: ${totalOTMonthHours.toFixed(2)} ชม. / 
 เทียบปีก่อน: ${percentChange(ys.people,pys.people)>0?"+":""}${percentChange(ys.people,pys.people).toFixed(1)}%
 
 จุดใช้คนสูงสุด
-${destinations.slice(0,5).map((d,i)=>`${i+1}. ${hotelName(d.hotel)} = ${d.people} คน`).join("\\n")}</textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendReportSummaryLine">LINE สรุปรายงาน</button><button class="btn btn-primary" data-action="copyLine">คัดลอกข้อความ LINE</button></div></section>
+${destinations.slice(0,5).map((d,i)=>`${i+1}. ${hotelName(d.hotel)} = ${d.people} คน`).join("\\n")}</textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendReportSummaryLine">💬 ส่งสรุปเข้า LINE</button><button class="btn btn-primary" data-action="copyLine">คัดลอกข้อความ LINE</button></div></section>
 </main>`;
 }
 function admin(){
@@ -2290,7 +2290,7 @@ else if(a==="removeAssignedMovement"){
  v21Audit('REMOVE_ASSIGNED_MOVEMENT',`${mv.id} • ${mv.name||mv.code} • ${mv.requestId||'-'}`);toast('เอาพนักงานออกจากงานช่วยแล้ว');render();return
 }
 else if(a==="sendDailyManpowerLine"){
- const h=el.dataset.hotel||currentHotel,d=el.dataset.date||todayISO(),txt=dailyManpowerLineText(h,d);localStorage.setItem(`fnb_daily_manpower_line_${h}_${d}`,String(Date.now()));v21Audit('SEND_DAILY_MANPOWER_LINE',`${hotelName(h)} • ${d}`);v29ShowLinePreview(txt,`📊 กำลังพลประจำวัน • ${hotelName(h)}`);return
+ const h=el.dataset.hotel||currentHotel,d=el.dataset.date||todayISO(),txt=dailyManpowerLineText(h,d);localStorage.setItem(`fnb_daily_manpower_line_${h}_${d}`,String(Date.now()));v21Audit('SEND_DAILY_MANPOWER_LINE',`${hotelName(h)} • ${d}`);fnbLineNow(txt,`📊 กำลังพลประจำวัน • ${hotelName(h)}`);return
 }
 else if(a==="saveAdminEmployee"){
  if(!v21CanPage('admin'))return toast('Admin only');
@@ -2405,7 +2405,7 @@ else if(a==="requestTab"){
   const rows=requestTab==="sent"?activeRequestList().filter(x=>((x.createdBy&&x.createdBy===v21CurrentUser?.id)||(!x.createdBy&&x.requesterHotel===currentHotel)||(!x.createdBy&&!x.requesterHotel&&x.fromHotel===currentHotel))):activeRequestList().filter(x=>x.toHotel===currentHotel);
   const statusLabel=x=>x.status==="pending"?"รอรับคำขอ":x.status==="accepted"?"รับคำขอแล้ว":x.status==="assigned"?"ได้คนแล้ว / รอปิดงาน":x.status==="done"?"ปิดงานแล้ว":x.status==="cancelled"?"ยกเลิกคำขอ":x.status==="rejected"?"ไม่อนุมัติ":"ปิดงาน";
   const cls=x=>x.status==="pending"?"status-pending":x.status==="accepted"?"status-accepted":x.status==="assigned"?"status-assigned":x.status==="cancelled"||x.status==="rejected"?"status-pending":"status-done";
-  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>เลขที่ใบขอ: ${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทาง</div><div class="name">${x.fromHotel?hotelName(x.fromHotel):"ไม่ระบุ"}</div><div class="small">${x.fromHotel?outletName(x.fromHotel,x.fromOutlet):"คำขอเดิมไม่มีต้นทาง"}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">ห้องอาหารปลายทาง: ${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-gold">${requestTypeLabel(x)}</span> ${x.role?`<span class="pill pill-blue">${x.role}</span>`:""} <span class="pill pill-gold">${requestIsCasual(x)?`ขอ ${x.casualPeople||0} คน`:`ขอ ${x.qty||0} คน`}</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${canRejectRequest(x)?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" data-action="approveRequest" data-id="${x.id}">✓ อนุมัติคำขอ</button><button class="btn btn-danger" data-action="rejectRequest" data-id="${x.id}">✕ ไม่อนุมัติ</button></div>`:""}${requestTab==="receive"&&x.status==="pending"&&v21CanPage("movement")?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"&&v21CanPage("movement")?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">LINE รายงาน</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">LINE จัดคน</button>`:''}${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">🗑 ลบคำขอ</button>`:''}${canCancelRequest(x)&&x.status!=="rejected"?`<button class="btn btn-light" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
+  root.innerHTML=rows.length?rows.map(x=>`<div class="req-card"><div class="req-head"><div><b>เลขที่ใบขอ: ${x.id}</b><div class="small">${x.date||"-"} • ${serviceRoundLabel(x.serviceRound)} • ${x.start}-${x.end}</div></div><span class="pill ${cls(x)}">${statusLabel(x)}</span></div><div class="req-route"><div class="req-box"><div class="label">ต้นทาง</div><div class="name">${x.fromHotel?hotelName(x.fromHotel):"ไม่ระบุ"}</div><div class="small">${x.fromHotel?outletName(x.fromHotel,x.fromOutlet):"คำขอเดิมไม่มีต้นทาง"}</div></div><div class="req-arrow">→</div><div class="req-box"><div class="label">ปลายทาง / โรงแรมที่ขอคน</div><div class="name">${hotelName(x.toHotel)}</div><div class="small">ห้องอาหารปลายทาง: ${outletName(x.toHotel,x.toOutlet)}</div></div></div><div><span class="pill pill-gold">${requestTypeLabel(x)}</span> ${x.role?`<span class="pill pill-blue">${x.role}</span>`:""} <span class="pill pill-gold">${requestIsCasual(x)?`ขอ ${x.casualPeople||0} คน`:`ขอ ${x.qty||0} คน`}</span> <span class="pill pill-blue">${x.reason||"ไม่ระบุงาน"}</span> <span class="pill pill-blue">ผู้อนุมัติ: ${x.approvedBy||x.approverName||"-"}</span></div>${canRejectRequest(x)?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" data-action="approveRequest" data-id="${x.id}">✓ อนุมัติคำขอ</button><button class="btn btn-danger" data-action="rejectRequest" data-id="${x.id}">✕ ไม่อนุมัติ</button></div>`:""}${requestTab==="receive"&&x.status==="pending"&&v21CanPage("movement")?`<button class="btn btn-primary" style="margin-top:12px" data-action="acceptRequest" data-id="${x.id}">รับคำขอ</button>`:requestTab==="receive"&&x.status==="accepted"&&v21CanPage("movement")?`<button class="btn btn-primary" style="margin-top:12px" data-action="assignRequest" data-id="${x.id}">จัดคนตามคำขอนี้</button>`:`<div class="small" style="margin-top:10px">สถานะ: ${statusLabel(x)}</div>`}${requestSourceSummaryHtml(x)}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="v29-line-btn" type="button" data-action="sendRequestLine" data-id="${x.id}">💬 ส่ง LINE</button>${x.status==="assigned"||x.status==="done"?`<button class="v29-line-btn secondary" type="button" data-action="sendAssignmentLine" data-id="${x.id}">💬 ส่งรายชื่อเข้า LINE</button>`:''}${canDeleteRequest(x)?`<button class="btn btn-light v23-delete" data-action="deleteRequest" data-id="${x.id}">🗑 ลบคำขอ</button>`:''}${canCancelRequest(x)&&x.status!=="rejected"?`<button class="btn btn-light" data-action="cancelRequest" data-id="${x.id}">ยกเลิก</button>`:''}${canCloseRequest(x)?`<button class="btn btn-primary" data-action="closeRequest" data-id="${x.id}">✓ ได้คนแล้ว / ปิดงาน</button>`:''}${canHideDoneRequest(x)?`<button class="btn btn-light v23-delete" data-action="hideDoneRequest" data-id="${x.id}">ซ่อนจากรายการ</button>`:''}</div></div>`).join(""):'<div class="card empty">ไม่มีรายการในมุมมองนี้</div>';
  }
 }
 
@@ -2446,15 +2446,15 @@ else if(a==="applyReportPeriod"){window.reportMonth=$("reportMonth").value;windo
 else if(a==="reportChartMetric"){window.reportChartMetric=el.dataset.metric||"people";go("reports")}
 
 else if(a==="sendRequestLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29RequestReport(r),'📋 รายงานคำขอพนักงาน',r.id);
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)fnbLineNow(v29RequestReport(r),'📋 รายงานคำขอพนักงาน',r.id);
 }
 else if(a==="sendAssignmentLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29AssignmentReport(r),'👥 รายงานจัดคนไปช่วย',r.id);
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)fnbLineNow(v29AssignmentReport(r),'👥 รายงานจัดคนไปช่วย',r.id);
 }
 else if(a==="sendCancelLine"){
- const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)v29ShowLinePreview(v29CancellationReport(r),'❌ รายงานยกเลิกคำขอ',r.id);
+ const r=DATA.requests.find(x=>x.id===el.dataset.id); if(r)fnbLineNow(v29CancellationReport(r),'❌ รายงานยกเลิกคำขอ',r.id);
 }
-else if(a==="sendReportSummaryLine"){v29ShowLinePreview(v29ReportSummary(),'📊 สรุปรายงานผู้บริหาร');}
+else if(a==="sendReportSummaryLine"){fnbLineNow(v29ReportSummary(),'📊 สรุปรายงานผู้บริหาร');}
 else if(a==="sendInlineLine"){const txt=window.v29LineTexts?.[el.dataset.lineId];if(txt)await v29ShareLine(txt);}
 else if(a==="copyInlineLine"){const txt=window.v29LineTexts?.[el.dataset.lineId];if(txt){try{await navigator.clipboard.writeText(txt);toast('คัดลอกแล้ว','ok')}catch{window.prompt('คัดลอกข้อความ',txt)}}}
 else if(a==="sendCurrentLine"){if(window.v29CurrentLineText)await v29ShareLine(window.v29CurrentLineText);}
@@ -4742,7 +4742,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
    window.fbPrintHTML(`<html><head><meta charset="utf-8"><title>F&B Manpower Assignment</title><style>body{font-family:Tahoma,Arial,sans-serif;padding:28px;font-size:16px;line-height:1.6}h1{color:#194c82;font-size:24px}pre{white-space:pre-wrap;font-family:inherit}</style></head><body><h1>F&B Manpower Assignment</h1><pre>${txt.replace(/<br>/g,'\n')}</pre></body></html>`);
  }
  function sendLine75(){
-   const r=getRequest();if(!r)return;const text=document.getElementById('v75ShareText')?.value||lineText75(r);const url='https://line.me/R/msg/text/?'+encodeURIComponent(text);window.open(url,'_blank');
+   const r=getRequest();if(!r)return;const text=document.getElementById('v75ShareText')?.value||lineText75(r);window.fnbSendToLine(text);
  }
  function copyLine75(){
    const t=document.getElementById('v75ShareText')?.value||lineText75(getRequest());
@@ -4853,6 +4853,46 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
 })();
 </script>
 
+<!-- EASY-LINE: one-tap "ส่งเข้า LINE" for every report button (large, senior-friendly) -->
+<script id="fnb-easy-line">
+(function(){
+ const isMobile=()=>/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));
+ function copy(text){
+  try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).catch(()=>legacy(text));return true}}catch(e){}
+  return legacy(text);
+ }
+ function legacy(text){try{const t=document.createElement('textarea');t.value=text;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:-1000px;opacity:0';document.body.appendChild(t);t.select();t.setSelectionRange(0,t.value.length);const ok=document.execCommand('copy');t.remove();return ok}catch(e){return false}}
+ function closeBox(){const b=document.getElementById('fnbEasyLine');if(b)b.remove()}
+ function box(html){closeBox();const d=document.createElement('div');d.id='fnbEasyLine';d.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(15,25,40,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML=`<div style="background:#fff;border-radius:22px;max-width:460px;width:100%;padding:26px 22px;font-family:inherit;color:#13283f;box-shadow:0 20px 60px rgba(0,0,0,.3)">${html}<button type="button" data-easyline-close style="margin-top:18px;width:100%;padding:16px;border:0;border-radius:14px;background:#e9eef4;color:#13283f;font:700 20px/1.2 inherit;cursor:pointer">ปิด</button></div>`;
+  d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-easyline-close]'))closeBox()});document.body.appendChild(d)}
+ window.fnbSendToLine=function(text){
+  text=String(text||'').trim();if(!text)return false;
+  const copied=copy(text);
+  if(isMobile()){
+   const url='https://line.me/R/share?text='+encodeURIComponent(text);
+   const w=window.open(url,'_blank');if(!w)location.href=url;
+   return true;
+  }
+  box(`<div style="text-align:center;font-size:54px;line-height:1">${copied?'✅':'📋'}</div>
+   <div style="text-align:center;font-size:24px;font-weight:800;margin:10px 0 16px">${copied?'คัดลอกรายงานแล้ว':'คัดลอกไม่ได้ — กรุณาคัดลอกเอง'}</div>
+   <div style="font-size:20px;line-height:1.9">① เปิดโปรแกรม <b style="color:#06C755">LINE</b><br>② เลือกกลุ่มที่จะส่ง<br>③ กด <b>Ctrl + V</b> แล้วกด <b>Enter</b></div>
+   ${copied?'':`<textarea readonly style="margin-top:12px;width:100%;height:140px;font-size:15px">${text.replace(/</g,'&lt;')}</textarea>`}
+   <a href="line://" style="display:block;margin-top:18px;text-align:center;padding:16px;border-radius:14px;background:#06C755;color:#fff;font:800 20px/1.2 inherit;text-decoration:none">💬 เปิดโปรแกรม LINE</a>`);
+  return true;
+ };
+})();
+</script>
+<script id="fnb-easy-line-manpower">
+// Every LINE button = one tap: show the report on screen AND open LINE right away.
+function fnbLineNow(text,title,id){try{v29ShowLinePreview(text,title,id)}catch(e){}window.fnbSendToLine(text)}
+v29ShareLine=async function(text){return window.fnbSendToLine(text)};
+</script>
+<style id="fnb-easy-line-css">
+.v29-line-btn{background:#06C755!important;color:#fff!important;border:0!important;min-height:48px!important;font-size:16px!important;font-weight:800!important;border-radius:12px!important;padding:10px 16px!important;cursor:pointer}
+.v29-line-btn.secondary{background:#fff!important;color:#058a3b!important;border:2px solid #06C755!important}
+[data-action="sendDailyManpowerLine"]{font-size:15px!important;padding:10px 14px!important;min-height:44px!important;font-weight:800!important}
+</style>
 <!-- V81 multi-device sync hardening: movement tombstones + assignment reconciliation -->
 <script id="v81-multidevice-sync">
 (function(){
@@ -5012,7 +5052,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   const wbad=!!(N.badBuckets&&Object.keys(N.badBuckets).length),rbad=N.readErrAt&&N.readErrAt>(N.readOk||0);
   const health=(wbad||rbad)?`<br><b style="color:#b4413c">⚠️ ${wbad?'บันทึกขึ้น Cloud ไม่สำเร็จ: '+N.writeErr+' ('+tt(N.writeErrAt)+') • ส่วนที่ติด: '+Object.keys(N.badBuckets||{}).join(', '):''}${wbad&&rbad?' • ':''}${rbad?'อ่าน Cloud ไม่สำเร็จ: '+N.readErr:''}</b>`:`<br>☁️ อ่าน Cloud ${tt(N.readOk)} • บันทึกขึ้น Cloud ${tt(N.writeOk)}`;
   const today=typeof todayISO==='function'?todayISO():'';const att=Object.values(DATA.attendance||{}).filter(a=>a.date===today).length;const closed=operationData().filter(o=>o.date===today&&o.status==='closed').length;let off='';try{if(currentHotel){const all=adminOutletList(currentHotel,true).filter(o=>!o.active||o.deleted).map(o=>o.name||o.id);off=all.length?` • ห้องที่ปิดใช้งาน (Admin): ${all.join(', ')}`:''}}catch(e){}
-  el.innerHTML=`เวอร์ชัน 2026-10-30-v86 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${off}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v87 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${off}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
  }
  setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
