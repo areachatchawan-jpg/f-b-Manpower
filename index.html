@@ -4962,6 +4962,27 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   if(!typing&&!modal&&(viewOnly||(!unsaved&&Date.now()-lastTouch>4000))){try{render()}catch(e){console.warn('[V82 render]',e)}}
   else banner().style.display='block';
  }
+ // Settings (Admin outlet on/off, names, default open times) used to be pushed
+ // only at the moment they were edited. Edits made while Cloud refused writes
+ // (HTTP 401) stayed on that one device, so devices counted different outlets.
+ // Now any local setting newer than Cloud is pushed on the next poll.
+ async function pushNewerSettings(){
+  const base=FNB_CLOUD.url+'/rest/v1/'+FNB_CLOUD.table;
+  const get=async b=>{const r=await fetch(base+'?select=item_id,payload,updated_at&bucket=eq.'+b,{headers:cloudHeaders(),cache:'no-store'});if(!r.ok)throw new Error('read '+b+' '+r.status);return r.json()};
+  const post=async rows=>{if(!rows.length)return;const r=await fetch(base+'?on_conflict=bucket,item_id',{method:'POST',headers:cloudHeaders(true),body:JSON.stringify(rows),cache:'no-store'});if(!r.ok)throw new Error('write '+r.status)};
+  // admin_config (single row). adminConfigData() drops updatedAt, so the local
+  // edit time is tracked separately in <key>_mt by the saveAdminConfig wrapper.
+  const raw=localStorage.getItem(FNB_ADMIN_CFG_KEY);
+  if(raw){const mt=Number(localStorage.getItem(FNB_ADMIN_CFG_KEY+'_mt')||0);const rows=await get('admin_config');const rr=rows.find(x=>x.item_id==='settings');const rt=rr?(Date.parse(rr.updated_at||'')||Number(rr.payload?.updatedAt||0)):0;
+   if(!rr||mt>rt){const at=mt||Date.now();await post([{bucket:'admin_config',item_id:'settings',payload:{...adminConfigData(),updatedAt:at},updated_at:new Date(at).toISOString()}]);try{localStorage.setItem(FNB_ADMIN_CFG_KEY+'_mt',String(at))}catch{}try{fnbRTBroadcast('admin_config','settings')}catch{}}}
+  // operation_defaults (one row per outlet/round)
+  const od=operationDefaultData(),keys=Object.keys(od);
+  if(keys.length){const rows=await get('operation_defaults');const rm=new Map(rows.map(x=>[x.item_id,Date.parse(x.updated_at||'')||Number(x.payload?.updatedAt||0)]));
+   const push=keys.filter(k=>Number(od[k]?.updatedAt||0)>(rm.get(k)||0)).map(k=>({bucket:'operation_defaults',item_id:k,payload:od[k],updated_at:new Date(Number(od[k].updatedAt)).toISOString()}));
+   if(push.length){await post(push);try{fnbRTBroadcast('operation_defaults','ALL')}catch{}}}
+ }
+ window.fnbPushNewerSettings=pushNewerSettings;
+ try{const baseSave=saveAdminConfig;saveAdminConfig=function(a){try{localStorage.setItem(FNB_ADMIN_CFG_KEY+'_mt',String(Date.now()))}catch{}return baseSave.apply(this,arguments)};window.saveAdminConfig=saveAdminConfig}catch(e){}
  const fullPoll=async function(){
   if(!navigator.onLine)return CLOUD_OK;if(polling&&Date.now()-polling<60000)return CLOUD_OK;polling=Date.now();
   try{
@@ -4971,6 +4992,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
    if(!document.getElementById('ops_modal')){try{await cloudSyncOperations()}catch(e){}}
    try{await cloudLoadOperationDefaults()}catch(e){}
    try{await cloudLoadAdminConfig()}catch(e){}
+   try{await pushNewerSettings()}catch(e){console.warn('[V86] settings',e)}
    try{reconcile()}catch(e){}
    if(before!==sig())safeRedraw();
    return CLOUD_OK;
@@ -4989,8 +5011,8 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   const N=window.__FNB_NET__||{},tt=x=>x?new Date(x).toLocaleTimeString('th-TH'):'-';
   const wbad=!!(N.badBuckets&&Object.keys(N.badBuckets).length),rbad=N.readErrAt&&N.readErrAt>(N.readOk||0);
   const health=(wbad||rbad)?`<br><b style="color:#b4413c">⚠️ ${wbad?'บันทึกขึ้น Cloud ไม่สำเร็จ: '+N.writeErr+' ('+tt(N.writeErrAt)+') • ส่วนที่ติด: '+Object.keys(N.badBuckets||{}).join(', '):''}${wbad&&rbad?' • ':''}${rbad?'อ่าน Cloud ไม่สำเร็จ: '+N.readErr:''}</b>`:`<br>☁️ อ่าน Cloud ${tt(N.readOk)} • บันทึกขึ้น Cloud ${tt(N.writeOk)}`;
-  const today=typeof todayISO==='function'?todayISO():'';const att=Object.values(DATA.attendance||{}).filter(a=>a.date===today).length;const closed=operationData().filter(o=>o.date===today&&o.status==='closed').length;
-  el.innerHTML=`เวอร์ชัน 2026-10-30-v85 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+  const today=typeof todayISO==='function'?todayISO():'';const att=Object.values(DATA.attendance||{}).filter(a=>a.date===today).length;const closed=operationData().filter(o=>o.date===today&&o.status==='closed').length;let off='';try{if(currentHotel){const all=adminOutletList(currentHotel,true).filter(o=>!o.active||o.deleted).map(o=>o.name||o.id);off=all.length?` • ห้องที่ปิดใช้งาน (Admin): ${all.join(', ')}`:''}}catch(e){}
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v86 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${off}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
  }
  setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
