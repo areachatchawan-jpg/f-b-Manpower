@@ -2516,9 +2516,9 @@ function v36ReadPendingMaster(){
   }catch(e){return null}
 }
 function v36WritePendingMaster(arr){
-  try{localStorage.setItem(V36_EMP_PENDING_KEY,JSON.stringify((arr||[]).map(v36NormalizeEmployee)))}catch(e){}
+  try{localStorage.setItem(V36_EMP_PENDING_KEY,JSON.stringify((arr||[]).map(v36NormalizeEmployee)));localStorage.setItem(V36_EMP_PENDING_KEY+'_meta',JSON.stringify({at:Date.now(),roster:(typeof FNB_ROSTER_VERSION!=='undefined'?FNB_ROSTER_VERSION:'')}))}catch(e){}
 }
-function v36ClearPendingMaster(){try{localStorage.removeItem(V36_EMP_PENDING_KEY)}catch(e){}}
+function v36ClearPendingMaster(){try{localStorage.removeItem(V36_EMP_PENDING_KEY);localStorage.removeItem(V36_EMP_PENDING_KEY+'_meta')}catch(e){}}
 
 function v36NormalizeEmployee(e){
   const x={...(e||{})};
@@ -2647,7 +2647,11 @@ async function v36SyncEmployeesMaster(){
   V36_EMP_SYNC_BUSY=true;
   try{
     cloudSetStatus('connecting','กำลังอ่าน Employee Master จาก Cloud');
-    const pending=v36ReadPendingMaster();
+    let pending=v36ReadPendingMaster();
+    // A pending (unsent) employee list saved by an OLDER version / older roster
+    // must never overwrite the current Cloud master — discard it.
+    if(pending){let meta=null;try{meta=JSON.parse(localStorage.getItem(V36_EMP_PENDING_KEY+'_meta')||'null')}catch(e){}
+      if(!meta||meta.roster!==FNB_ROSTER_VERSION||Date.now()-Number(meta.at||0)>3*864e5){v36ClearPendingMaster();pending=null;console.warn('[F&B] stale pending employee master discarded')}}
     if(pending){
       DATA.employees=pending;
       localSave(EMPLOYEE_STORE_KEY,DATA.employees);
@@ -4968,7 +4972,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
    el.addEventListener('click',e=>{if(!e.target.closest('[data-v82-reset]'))return;if(!confirm('โหลดข้อมูลพนักงาน/คำขอ ในเครื่องนี้ใหม่จาก Cloud ?\n(ข้อมูลบน Cloud ไม่ถูกลบ)'))return;try{['baiyoke_fnb_manpower_employees_v36_pending',EMPLOYEE_STORE_KEY,REQUEST_STORE_KEY,MOVEMENT_STORE_KEY].forEach(k=>localStorage.removeItem(k))}catch{}location.reload()})}
   const n=(DATA.employees||[]).length,h=(DATA.employees||[]).filter(e=>e.hotel===currentHotel).length;
   const last=CLOUD_STATE?.lastSync?new Date(CLOUD_STATE.lastSync).toLocaleTimeString('th-TH'):'-';
-  el.innerHTML=`เวอร์ชัน 2026-10-30-v82 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v83 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
  }
  setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
