@@ -4856,6 +4856,20 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
 <!-- V81 multi-device sync hardening: movement tombstones + assignment reconciliation -->
 <script id="v81-multidevice-sync">
 (function(){
+ // ---- Network guard: a Cloud request that hangs (weak Wi-Fi, security
+ // software) must never freeze syncing forever. Abort after 20s and record
+ // read/write health so the footer can show it.
+ const NET={readOk:0,writeOk:0,writeErr:'',writeErrAt:0,readErr:'',readErrAt:0};window.__FNB_NET__=NET;
+ const rawFetch=window.fetch.bind(window);
+ window.fetch=function(u,o){o=o||{};const url=String((u&&u.url)||u||'');if(!url.includes('supabase.co/rest/'))return rawFetch(u,o);
+  const w=String(o.method||'GET').toUpperCase()!=='GET';const ac=new AbortController();const t=setTimeout(()=>ac.abort(),20000);
+  return rawFetch(u,{...o,signal:ac.signal}).then(r=>{clearTimeout(t);if(r.ok){if(w)NET.writeOk=Date.now();else NET.readOk=Date.now()}else{const m='HTTP '+r.status;if(w){NET.writeErr=m;NET.writeErrAt=Date.now()}else{NET.readErr=m;NET.readErrAt=Date.now()}}return r})
+   .catch(e=>{clearTimeout(t);const m=e&&e.name==='AbortError'?'หมดเวลา (20 วินาที)':String(e&&e.message||e);if(w){NET.writeErr=m;NET.writeErrAt=Date.now()}else{NET.readErr=m;NET.readErrAt=Date.now()}throw e})};
+ // Unstick busy flags left behind by an interrupted request.
+ let busySince={};
+ setInterval(()=>{try{const now=Date.now();const chk=(k,get,set)=>{if(get()){busySince[k]=busySince[k]||now;if(now-busySince[k]>45000){set();busySince[k]=0;console.warn('[V84] reset stuck',k)}}else busySince[k]=0};
+  chk('emp',()=>V36_EMP_SYNC_BUSY,()=>{V36_EMP_SYNC_BUSY=false});chk('empw',()=>V36_EMP_WRITE_BUSY,()=>{V36_EMP_WRITE_BUSY=false});
+  Object.keys(CLOUD_BUSY||{}).forEach(b=>chk('b_'+b,()=>CLOUD_BUSY[b],()=>{CLOUD_BUSY[b]=false}));}catch(e){}},5000);
  const TOMB_KEY='fnb_mv_tombstones_v1',KEEP=45*864e5;
  const ts=x=>Number(x?.updatedAt||x?.deletedAt||x?.createdAt||0);
  function load(){try{return JSON.parse(localStorage.getItem(TOMB_KEY)||'{}')||{}}catch{return {}}}
@@ -4949,7 +4963,7 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
   else banner().style.display='block';
  }
  const fullPoll=async function(){
-  if(polling||!navigator.onLine)return CLOUD_OK;polling=true;
+  if(!navigator.onLine)return CLOUD_OK;if(polling&&Date.now()-polling<60000)return CLOUD_OK;polling=Date.now();
   try{
    const before=sig();
    for(const b of ['requests','movements','ots','employees','ot_requests']){try{await cloudSyncBucket(b)}catch(e){}}
@@ -4972,7 +4986,11 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.6}
    el.addEventListener('click',e=>{if(!e.target.closest('[data-v82-reset]'))return;if(!confirm('โหลดข้อมูลพนักงาน/คำขอ ในเครื่องนี้ใหม่จาก Cloud ?\n(ข้อมูลบน Cloud ไม่ถูกลบ)'))return;try{['baiyoke_fnb_manpower_employees_v36_pending',EMPLOYEE_STORE_KEY,REQUEST_STORE_KEY,MOVEMENT_STORE_KEY].forEach(k=>localStorage.removeItem(k))}catch{}location.reload()})}
   const n=(DATA.employees||[]).length,h=(DATA.employees||[]).filter(e=>e.hotel===currentHotel).length;
   const last=CLOUD_STATE?.lastSync?new Date(CLOUD_STATE.lastSync).toLocaleTimeString('th-TH'):'-';
-  el.innerHTML=`เวอร์ชัน 2026-10-30-v83 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
+  const N=window.__FNB_NET__||{},tt=x=>x?new Date(x).toLocaleTimeString('th-TH'):'-';
+  const wbad=N.writeErrAt&&N.writeErrAt>(N.writeOk||0),rbad=N.readErrAt&&N.readErrAt>(N.readOk||0);
+  const health=(wbad||rbad)?`<br><b style="color:#b4413c">⚠️ ${wbad?'บันทึกขึ้น Cloud ไม่สำเร็จ: '+N.writeErr+' ('+tt(N.writeErrAt)+')':''}${wbad&&rbad?' • ':''}${rbad?'อ่าน Cloud ไม่สำเร็จ: '+N.readErr:''}</b>`:`<br>☁️ อ่าน Cloud ${tt(N.readOk)} • บันทึกขึ้น Cloud ${tt(N.writeOk)}`;
+  const today=typeof todayISO==='function'?todayISO():'';const att=Object.values(DATA.attendance||{}).filter(a=>a.date===today).length;const closed=operationData().filter(o=>o.date===today&&o.status==='closed').length;
+  el.innerHTML=`เวอร์ชัน 2026-10-30-v84 • พนักงานทั้งหมด ${n} คน${(typeof page!=='undefined'&&['select','login'].includes(page))?'':` (โรงแรมนี้ ${h})`} • sync ล่าสุด ${last} • เช็กวันนี้ ${att} • ปิดรอบ ${closed}${health}<br><a href="#" data-v82-reset style="color:#3d7197">↻ โหลดข้อมูลเครื่องนี้ใหม่จาก Cloud</a>`;
  }
  setInterval(()=>{try{footer()}catch{}},3000);setTimeout(()=>{try{footer()}catch{}},1500);
  try{DATA.movements=(DATA.movements||[]).filter(m=>!m.deleted&&!m._deleted&&!isTombed(m));knownReset();reconcile()}catch(e){}
