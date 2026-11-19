@@ -105,20 +105,14 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
         <div><label for="oStart">เริ่ม</label><input type="time" id="oStart"></div>
         <div><label for="oEnd">สิ้นสุด</label><input type="time" id="oEnd"></div>
       </div>
-      <div class="row">
-        <div><label for="oBreak">พัก (นาที)</label><input type="number" id="oBreak" value="0" min="0" inputmode="numeric"></div>
-        <div><label for="oType">ประเภท</label><select id="oType">
-          <option value="ot">OT วันทำงาน</option>
-          <option value="holiday">ทำงานวันหยุด</option>
-          <option value="holidayOt">OT วันหยุด</option></select></div>
-      </div>
+      <label for="oBreak">หักเวลาพัก (นาที)</label><input type="number" id="oBreak" value="0" min="0" inputmode="numeric">
       <label for="oReason">งาน / เหตุผล</label><textarea id="oReason" rows="2"></textarea>
       <label for="oPhoto">รูปหลักฐาน (ถ่ายหน้างาน)</label><input type="file" id="oPhoto" accept="image/*" capture="environment">
       <img class="prev" id="oPrev" alt="">
       <button class="btn" id="bFill" style="margin-top:10px;width:100%">ดึงเวลาจากการสแกนออกวันนี้</button>
       <div class="calc"><div><div id="cHrs" class="note">0 ชม.</div><div id="cRate" class="note"></div></div><b id="cAmt">฿0</b></div>
       <button class="pri" id="bOt">สแกนนิ้วเพื่อยืนยันส่ง OT</button>
-      <p class="note">ยอดเงินที่แสดงเป็นค่าประมาณ ระบบหลังบ้านจะคำนวณใหม่จากค่าจ้างที่ HR ตั้งไว้</p>
+      <p class="note">คิด OT ชั่วโมงละ 60 บาท ตามเวลาจริงเป็นนาที เช่น 1 ชม. 30 นาที = 90 บาท</p>
     </div>
   </section>
 
@@ -134,12 +128,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
   <!-- ตั้งค่า -->
   <section class="view" id="vSet">
     <div class="card">
-      <h2>ค่าจ้างและเวลางาน</h2>
-      <p class="note" id="setNote">ใช้คำนวณ OT ในโหมดทดลอง ถ้าเชื่อมต่อ Google Sheets แล้ว ค่าเหล่านี้จะมาจากชีต Employees ที่ HR ตั้งไว้</p>
-      <div class="row">
-        <div><label for="wType">ประเภทค่าจ้าง</label><select id="wType"><option value="monthly">รายเดือน</option><option value="daily">รายวัน</option></select></div>
-        <div><label for="wAmt">ค่าจ้าง (บาท)</label><input type="number" id="wAmt" inputmode="decimal"></div>
-      </div>
+      <h2>เวลางานปกติ</h2>
+      <p class="note" id="setNote">ใช้เป็นเวลาเริ่ม OT อัตโนมัติ (OT เริ่มนับหลังเวลาเลิกงาน) · ค่า OT ชั่วโมงละ 60 บาท</p>
       <div class="row">
         <div><label for="wStart">เข้างาน</label><input type="time" id="wStart" value="08:00"></div>
         <div><label for="wEnd">เลิกงาน</label><input type="time" id="wEnd" value="17:00"></div>
@@ -182,8 +172,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
 {
 // ===== ตั้งค่า: วาง URL ของ Google Apps Script Web App ที่นี่ (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง) =====
 const SCRIPT_URL = '';
-// อัตรา OT ตาม พ.ร.บ.คุ้มครองแรงงาน (แก้ได้)
-const RATES = {ot:1.5, holidayOt:3, holiday:{monthly:1, daily:2}};
+// ค่า OT ต่อชั่วโมง (บาท) อัตราเดียวทุกคน ทุกวัน
+const OT_RATE = 60;
 
 // จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
 // เมื่อเชื่อม Google Sheets แล้ว ค่าจะมาจากชีต Hotels แทน (แก้ได้โดยไม่ต้องแก้โค้ด)
@@ -273,14 +263,12 @@ function stampPhoto(file, lines){
 
 // ---------- คำนวณ OT ----------
 function calcOt(date, start, end, brk, type, w){
-  if(!start||!end) return {hours:0, rate:0, hourly:0, amount:0};
+  if(!start||!end) return {hours:0, rate:1, hourly:OT_RATE, amount:0};
   const [sh,sm]=start.split(':').map(Number), [eh,em]=end.split(':').map(Number);
   let mins = (eh*60+em)-(sh*60+sm); if(mins<=0) mins += 1440; // ข้ามเที่ยงคืน
   mins = Math.max(0, mins-(+brk||0));
   const hours = Math.round(mins/60*100)/100;
-  const hourly = w.type==='monthly' ? (+w.amount||0)/30/8 : (+w.amount||0)/8;
-  const rate = type==='holiday' ? RATES.holiday[w.type] : RATES[type];
-  return {hours, rate, hourly, amount: Math.round(hours*hourly*rate*100)/100};
+  return {hours, rate:1, hourly:OT_RATE, amount: Math.round(hours*OT_RATE*100)/100};
 }
 
 // ---------- ข้อมูล: Google Sheets หรือ localStorage ----------
@@ -319,8 +307,8 @@ $('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) 
 function renderMe(){
   $('who').textContent = me ? `${me.name} · ${me.id}` : 'ยังไม่ได้ลงทะเบียน';
   $('devInfo').textContent = me ? `ผูกกับ ${me.name} (${me.id}) ตั้งแต่ ${me.since}` : '';
-  $('wType').value=wage.type; $('wAmt').value=wage.amount; $('wStart').value=wage.start||'08:00'; $('wEnd').value=wage.end||'17:00';
-  if(SCRIPT_URL){['wType','wAmt','wStart','wEnd','bSave'].forEach(i=>$(i).disabled=true)}
+  $('wStart').value=wage.start||'08:00'; $('wEnd').value=wage.end||'17:00';
+  if(SCRIPT_URL){['wStart','wEnd','bSave'].forEach(i=>$(i).disabled=true)}
 }
 
 // ---------- ลงทะเบียน ----------
@@ -397,12 +385,12 @@ $('bOut').addEventListener('click',()=>startClock('out'));
 // ---------- OT ----------
 let otPhoto=null;
 function refreshCalc(){
-  const c = calcOt($('oDate').value,$('oStart').value,$('oEnd').value,$('oBreak').value,$('oType').value,wage);
-  $('cHrs').textContent = `${c.hours} ชม. × ${baht(c.hourly)} บ./ชม.`;
-  $('cRate').textContent = c.rate?`อัตรา ${c.rate} เท่า`:'';
+  const c = calcOt($('oDate').value,$('oStart').value,$('oEnd').value,$('oBreak').value,'ot',wage);
+  $('cHrs').textContent = `${c.hours} ชม. × ${OT_RATE} บาท`;
+  $('cRate').textContent = 'อัตรา OT ชั่วโมงละ '+OT_RATE+' บาท';
   $('cAmt').textContent = '฿'+baht(c.amount);
 }
-['oDate','oStart','oEnd','oBreak','oType'].forEach(i=>$(i).addEventListener('input',refreshCalc));
+['oDate','oStart','oEnd','oBreak'].forEach(i=>$(i).addEventListener('input',refreshCalc));
 $('oPhoto').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return; const d=new Date();
   otPhoto = await stampPhoto(f,[hotelOf(getHotel('oHotel')).name, `${me.name} · หลักฐาน OT`, `${ymd(d)} ${hm(d)}`]);
@@ -415,7 +403,7 @@ $('bFill').addEventListener('click', async()=>{
   $('oDate').value=today; $('oStart').value=wage.end||'17:00'; $('oEnd').value=out.ts.slice(11,16); refreshCalc();
 });
 $('bOt').addEventListener('click', async()=>{
-  const d={hotel:hotelOf(getHotel('oHotel')).name, date:$('oDate').value,start:$('oStart').value,end:$('oEnd').value,brk:+$('oBreak').value||0,type:$('oType').value,reason:$('oReason').value.trim()};
+  const d={hotel:hotelOf(getHotel('oHotel')).name, date:$('oDate').value,start:$('oStart').value,end:$('oEnd').value,brk:+$('oBreak').value||0,type:'ot',reason:$('oReason').value.trim()};
   if(!d.date||!d.start||!d.end) return toast('กรอกวันที่และเวลาให้ครบ');
   if(!d.reason) return toast('ระบุงานหรือเหตุผล');
   $('bOt').disabled=true;
@@ -443,7 +431,7 @@ async function loadHist(){
   $('sHrs').textContent = Math.round(ot.reduce((s,o)=>s+(+o.hours||0),0)*100)/100;
   $('sAmt').textContent = baht(ot.reduce((s,o)=>s+(+o.amount||0),0));
   const items = [...att.map(a=>({k:a.ts, h:`<div class="rec">${a.photo&&a.photo.startsWith('data:')?`<img src="${a.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${a.ts.slice(0,16)}</b><small>${esc(a.hotel||'')}${a.place?' · '+esc(a.place):''}${a.dist!=null&&a.dist!==''?` · ${a.inArea===false||a.inArea==='นอกพื้นที่'?'<span style="color:var(--bad)">นอกพื้นที่</span>':'ในพื้นที่'}`:''} · <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" rel="noopener">แผนที่</a> ±${a.acc} ม.</small></div><span class="tag ${a.type}">${a.type==='in'?'เข้า':'ออก'}</span></div>`})),
-    ...ot.map(o=>({k:o.date+' '+o.end, h:`<div class="rec">${o.photo&&o.photo.startsWith('data:')?`<img src="${o.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${o.date} ${o.start}–${o.end}</b><small>${esc(o.hotel||'')} · ${o.hours} ชม. × ${o.rate} เท่า = ฿${baht(o.amount)} · ${esc(o.check||'')} · ${esc(o.status||'')}</small></div><span class="tag ot">OT</span></div>`}))]
+    ...ot.map(o=>({k:o.date+' '+o.end, h:`<div class="rec">${o.photo&&o.photo.startsWith('data:')?`<img src="${o.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${o.date} ${o.start}–${o.end}</b><small>${esc(o.hotel||'')} · ${o.hours} ชม. × ${OT_RATE} = ฿${baht(o.amount)} · ${esc(o.check||'')} · ${esc(o.status||'')}</small></div><span class="tag ot">OT</span></div>`}))]
     .sort((a,b)=>b.k.localeCompare(a.k));
   $('hList').innerHTML = items.length ? items.map(i=>i.h).join('') : '<p class="note">ไม่มีข้อมูลเดือนนี้</p>';
 }
@@ -457,7 +445,7 @@ $('bCsv').addEventListener('click',()=>{
 });
 
 // ---------- ตั้งค่า ----------
-$('bSave').addEventListener('click',()=>{wage={type:$('wType').value,amount:+$('wAmt').value||0,start:$('wStart').value,end:$('wEnd').value};store.set('tc_wage',wage);refreshCalc();toast('บันทึกแล้ว')});
+$('bSave').addEventListener('click',()=>{wage={...wage,start:$('wStart').value,end:$('wEnd').value};store.set('tc_wage',wage);refreshCalc();toast('บันทึกแล้ว')});
 $('bReset').addEventListener('click',()=>{ if($('bReset').dataset.c){ localStorage.removeItem('tc_me'); me=null; renderMe(); show('vReg'); $('bReset').textContent='ยกเลิกการลงทะเบียนในเครื่องนี้'; delete $('bReset').dataset.c } else { $('bReset').dataset.c=1; $('bReset').textContent='แตะอีกครั้งเพื่อยืนยัน' } });
 
 // ---------- วัดพิกัด ----------

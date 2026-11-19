@@ -5,7 +5,7 @@
  */
 const TZ = 'Asia/Bangkok';
 const PHOTO_FOLDER = 'หลักฐานลงเวลา';
-const RATES = { ot: 1.5, holidayOt: 3, holiday: { monthly: 1, daily: 2 } }; // ตาม พ.ร.บ.คุ้มครองแรงงาน
+const OT_RATE = 60; // ค่า OT บาทต่อชั่วโมง อัตราเดียวทุกคน
 const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' };
 
 // พิกัดเริ่มต้นของจุดสแกน (ชีต Hotels จะถูกสร้างจากค่านี้ แล้ว HR แก้ในชีตได้เลย)
@@ -16,7 +16,7 @@ const DEFAULT_HOTELS = [
 ];
 const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
 const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
-const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'ค่าจ้าง/ชม.', 'จำนวนเงิน', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
+const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'บาท/ชม.', 'จำนวนเงิน (บาท)', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
 
 function doPost(e) {
   try {
@@ -118,10 +118,7 @@ function calcOt(start, end, brk, type, w) {
   let mins = toM(end) - toM(start); if (mins <= 0) mins += 1440;
   mins = Math.max(0, mins - (Number(brk) || 0));
   const hours = Math.round(mins / 60 * 100) / 100;
-  const hourly = w.type === 'monthly' ? w.amount / 30 / 8 : w.amount / 8;
-  const rate = type === 'holiday' ? RATES.holiday[w.type] : RATES[type];
-  if (!rate) throw new Error('ประเภท OT ไม่ถูกต้อง');
-  return { hours, rate, hourly: Math.round(hourly * 100) / 100, amount: Math.round(hours * hourly * rate * 100) / 100 };
+  return { hours, rate: 1, hourly: OT_RATE, amount: Math.round(hours * OT_RATE * 100) / 100 };
 }
 
 function ot(d) {
@@ -133,7 +130,7 @@ function ot(d) {
   const outs = att.filter(r => String(r[1]) === String(d.empId) && r[3] === 'ออก' && txt(r[0]).slice(0, 10) === d.date).map(r => txt(r[0]).slice(11, 16));
   const overnight = d.end <= d.start;
   const check = overnight ? 'OT ข้ามคืน ตรวจด้วยตนเอง' : outs.some(t => t >= d.end) ? 'ตรงกับเวลาสแกนออก' : 'ไม่พบสแกนออกที่ครอบคลุม';
-  const label = { ot: 'OT วันทำงาน', holiday: 'ทำงานวันหยุด', holidayOt: 'OT วันหยุด' }[d.type];
+  const label = 'OT';
   const url = savePhoto(d.photo, d.empId + '_OT_' + d.date);
   sheet('OT', H_OT).appendRow([now(), d.empId, e.v[1], d.date, d.start, d.end, d.brk || 0, c.hours, label, c.rate, c.hourly, c.amount, d.reason || '', url, mapUrl(d.gps), check, 'รออนุมัติ', d.hotel || '']);
   return Object.assign({ check }, c);
@@ -144,7 +141,7 @@ function list(d) {
   const id = String(d.empId);
   const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-120)
     .map(r => ({ ts: txt(r[0]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9], hotel: r[13], dist: r[14], inArea: r[15] }));
-  const typ = { 'OT วันทำงาน': 'ot', 'ทำงานวันหยุด': 'holiday', 'OT วันหยุด': 'holidayOt' };
+  const typ = { 'OT': 'ot' };
   const ot = sheet('OT', H_OT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-60)
     .map(r => ({ date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), hours: r[7], type: typ[r[8]], rate: r[9], amount: r[11], reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }));
   return { att, ot };
