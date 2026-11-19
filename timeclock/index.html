@@ -118,7 +118,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 19 พ.ย. 10:50</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 19 พ.ย. 11:00</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -171,7 +171,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <!-- ประวัติ -->
   <section class="view" id="vHist">
     <div class="card">
-      <div class="row" style="align-items:end"><div><label for="hMonth">เดือน</label><input type="month" id="hMonth"></div><button id="bCsv">ส่งออก CSV</button></div>
+      <div class="row" style="align-items:end"><div><label for="hMonth">เดือน</label><input type="month" id="hMonth"></div><button id="bCsv">ส่งออก Excel</button></div>
       <p></p><div class="sum"><div><b id="sDays">0</b><span>วันที่มาทำงาน</span></div><div><b id="sHrs">0</b><span>ชม. OT</span></div><div><b id="sAmt">0</b><span>บาท OT</span></div></div>
     </div>
     <div class="card" id="hList"><p class="note">กำลังโหลด…</p></div>
@@ -197,14 +197,14 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 19 พ.ย. 10:50</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 19 พ.ย. 11:00</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
   <section class="view" id="vRep">
     <div style="display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap">
       <div><h2 style="margin:0">รายงานลงเวลา &amp; OT<span class="admin-badge">แอดมิน</span></h2><div class="note" id="rAsof"></div></div>
-      <div class="acts"><button id="rReload">รีเฟรช</button><button id="rCsv">ส่งออก CSV</button><button id="rLogout">ออกจากระบบแอดมิน</button></div>
+      <div class="acts"><button id="rReload">รีเฟรช</button><button id="rCsv">ส่งออก Excel</button><button id="rLogout">ออกจากระบบแอดมิน</button></div>
     </div>
     <div class="card filters">
       <div><label for="fMonth">เดือน</label><input type="month" id="fMonth"></div>
@@ -250,7 +250,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=1050"></script>
+<script src="config.js?v=1100"></script>
+<script src="xlsx-lite.js?v=1100"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -273,6 +274,8 @@ const pad = n => String(n).padStart(2,'0');
 const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const hm = d => pad(d.getHours())+':'+pad(d.getMinutes());
 const baht = n => (Math.round(n*100)/100).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = v => v===''||v==null||isNaN(+v) ? '' : +v;
+const monthTh = m => { const [y,mo]=String(m).split('-'); return new Date(+y,+mo-1,1).toLocaleDateString('th-TH',{month:'long',year:'numeric'}) };
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ล้างข้อมูลทดลองทุกเครื่องอัตโนมัติ: เปลี่ยนค่านี้เมื่อต้องการรีเซ็ตข้อมูลในเครื่องของทุกคน
 const DATA_VER = 'reset-2026-11-19';
@@ -541,12 +544,24 @@ async function loadHist(){
   $('hList').innerHTML = items.length ? items.map(i=>i.h).join('') : '<p class="note">ไม่มีข้อมูลเดือนนี้</p>';
 }
 $('hMonth').addEventListener('change',loadHist);
-$('bCsv').addEventListener('click',()=>{
-  const m=$('hMonth').value, q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const lines=[['ประเภท','วันเวลา','โรงแรม','หมายเหตุ','lat','lng','ความแม่นยำ(ม.)','OT เริ่ม','OT สิ้นสุด','ชม.','อัตรา','บาท','ตรวจสอบ','สถานะ'].map(q).join(',')];
-  cache.att.filter(a=>a.ts.startsWith(m)).forEach(a=>lines.push([a.type==='in'?'เข้า':'ออก',a.ts,a.hotel,a.place,a.lat,a.lng,a.acc,'','','','','','',''].map(q).join(',')));
-  cache.ot.filter(o=>(o.date||'').startsWith(m)).forEach(o=>lines.push(['OT',o.date,o.hotel,o.reason,'','','',o.start,o.end,o.hours,o.rate,o.amount,o.check,o.status].map(q).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv'})); a.download=`timesheet-${me.id}-${m}.csv`; a.click();
+$('bCsv').addEventListener('click', async()=>{
+  const b=$('bCsv'); b.disabled=true;
+  try{
+    const m=$('hMonth').value, logo=await XLSX_LITE.loadLogo('logo-queensland.png',170);
+    const att=cache.att.filter(a=>a.ts.startsWith(m)).sort((a,b)=>a.ts.localeCompare(b.ts)), ot=cache.ot.filter(o=>(o.date||'').startsWith(m)).sort((a,b)=>String(a.date).localeCompare(b.date));
+    const sub=`${me.name} (${me.id}) · เดือน ${monthTh(m)} · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}`;
+    const blob=XLSX_LITE.build({logo, sheets:[
+      {name:'ลงเวลา', title:'ประวัติการลงเวลา', subtitle:sub,
+       cols:[{h:'วันที่',w:12},{h:'เวลา',w:9},{h:'เข้า/ออก',w:9},{h:'โรงแรม',w:26},{h:'หมายเหตุ',w:22},{h:'ห่างจุดสแกน (ม.)',w:12,t:'int'},{h:'GPS ± (ม.)',w:10,t:'int'},{h:'แผนที่',w:36}],
+       rows:att.map(a=>[a.ts.slice(0,10),a.ts.slice(11,16),a.type==='in'?'เข้า':'ออก',a.hotel||'',a.place||'',num(a.dist),num(a.acc),a.lat?`https://maps.google.com/?q=${a.lat},${a.lng}`:''])},
+      {name:'OT', title:'รายการ OT', subtitle:sub+` · ${OT_RATE} บาท/ชม.`,
+       cols:[{h:'วันที่',w:12},{h:'โรงแรม',w:26},{h:'เริ่ม',w:8},{h:'สิ้นสุด',w:8},{h:'พัก (นาที)',w:9,t:'int'},{h:'ชั่วโมง',w:9,t:'dec'},{h:'จำนวนเงิน (บาท)',w:14,t:'num'},{h:'งาน/เหตุผล',w:30},{h:'ตรวจกับสแกนออก',w:20},{h:'สถานะ',w:12}],
+       rows:ot.map(o=>[o.date,o.hotel||'',o.start,o.end,num(o.brk),num(o.hours),num(o.amount),o.reason||'',o.check||'',o.status||'']),
+       total:['รวม','','','','',ot.reduce((s,o)=>s+(+o.hours||0),0),ot.reduce((s,o)=>s+(+o.amount||0),0),'','','']}
+    ]});
+    XLSX_LITE.download(blob,`ประวัติลงเวลา-${me.id}-${m}.xlsx`);
+  }catch(e){toast('สร้างไฟล์ไม่สำเร็จ: '+e.message)}
+  b.disabled=false;
 });
 
 // ---------- ตั้งค่า ----------
@@ -654,15 +669,34 @@ $('pOt').addEventListener('click',async e=>{
   try{ await api('otStatus',{adminPass,row:+b.dataset.row,id:b.dataset.id,status:b.dataset.s}); const o=RD.ot.find(x=>x.row===+b.dataset.row); if(o)o.status=b.dataset.s; renderReport(); toast(b.dataset.s+'แล้ว') }
   catch(err){ toast(err.message); bs.forEach(x=>x.disabled=false) }
 });
-$('rCsv').addEventListener('click',()=>{
-  const {att,ot}=rFiltered(), q=v=>`"${String(v??'').replace(/"/g,'""')}"`, L=[];
-  L.push(q('สรุปลงเวลา เดือน '+$('fMonth').value));
-  L.push(['เวลา','รหัส','ชื่อ','เข้า/ออก','โรงแรม','ห่างจุดสแกน(ม.)','GPS±(ม.)','หมายเหตุ','lat','lng','รูป'].map(q).join(','));
-  [...att].sort((a,b)=>a.ts.localeCompare(b.ts)).forEach(a=>L.push([a.ts,a.id,a.name,a.type==='in'?'เข้า':'ออก',a.hotel,a.dist,a.acc,a.place,a.lat,a.lng,String(a.photo||'').startsWith('http')?a.photo:''].map(q).join(',')));
-  L.push('',q('OT ('+OT_RATE+' บาท/ชม.)'));
-  L.push(['วันที่','รหัส','ชื่อ','โรงแรม','เริ่ม','สิ้นสุด','พัก(นาที)','ชั่วโมง','บาท','งาน/เหตุผล','ตรวจกับสแกนออก','สถานะ'].map(q).join(','));
-  [...ot].sort((a,b)=>String(a.date).localeCompare(b.date)).forEach(o=>L.push([o.date,o.id,o.name,o.hotel,o.start,o.end,o.brk,o.hours,o.amount,o.reason,o.check,o.status].map(q).join(',')));
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\n')],{type:'text/csv'})); a.download=`report-${$('fMonth').value}.csv`; a.click();
+$('rCsv').addEventListener('click', async()=>{
+  const b=$('rCsv'); b.disabled=true;
+  try{
+    const {att,ot}=rFiltered(), m=$('fMonth').value, logo=await XLSX_LITE.loadLogo('logo-queensland.png',170);
+    const hotel=$('fHotel').value||'Baiyoke Sky Hotel Bangkok และ Queensland Hotel Bangkok';
+    const sub=`${hotel} · เดือน ${monthTh(m)} · ออกรายงานโดย ${ADMIN.name} · ${new Date().toLocaleString('th-TH')}`;
+    const emp={}; const E=x=>emp[x.id]??={id:x.id,name:x.name,hotel:x.hotel,days:new Set(),noOut:0,ah:0,aa:0,ph:0,pa:0};
+    att.forEach(a=>{const e=E(a);if(a.type==='in')e.days.add(a.ts.slice(0,10))});
+    ot.forEach(o=>{const e=E(o);if(o.status==='อนุมัติ'){e.ah+=+o.hours||0;e.aa+=+o.amount||0}else if(o.status!=='ไม่อนุมัติ'){e.ph+=+o.hours||0;e.pa+=+o.amount||0}});
+    Object.values(emp).forEach(e=>e.days.forEach(d=>{if(!att.some(a=>a.id===e.id&&a.type==='out'&&a.ts.startsWith(d)))e.noOut++}));
+    const el=Object.values(emp).sort((a,b)=>String(a.name).localeCompare(String(b.name),'th')), S=(l,k)=>l.reduce((s,x)=>s+(+x[k]||0),0);
+    const ots=[...ot].sort((a,b)=>String(a.date).localeCompare(b.date)), ats=[...att].sort((a,b)=>a.ts.localeCompare(b.ts));
+    const blob=XLSX_LITE.build({logo, sheets:[
+      {name:'สรุปรายคน', title:'สรุปการลงเวลาและ OT รายบุคคล', subtitle:sub,
+       cols:[{h:'รหัส',w:10},{h:'ชื่อ-นามสกุล',w:26},{h:'โรงแรม',w:26},{h:'วันทำงาน',w:10,t:'int'},{h:'ลืมสแกนออก',w:11,t:'int'},{h:'OT อนุมัติ (ชม.)',w:13,t:'dec'},{h:'ค่า OT อนุมัติ (บาท)',w:16,t:'num'},{h:'OT รออนุมัติ (ชม.)',w:14,t:'dec'},{h:'รออนุมัติ (บาท)',w:14,t:'num'}],
+       rows:el.map(e=>[e.id,e.name,e.hotel||'',e.days.size,e.noOut,e.ah,e.aa,e.ph,e.pa]),
+       total:['รวม','','',el.reduce((s,e)=>s+e.days.size,0),S(el,'noOut'),S(el,'ah'),S(el,'aa'),S(el,'ph'),S(el,'pa')]},
+      {name:'OT', title:'รายการ OT', subtitle:sub+` · ${OT_RATE} บาท/ชม.`,
+       cols:[{h:'วันที่',w:12},{h:'รหัส',w:10},{h:'ชื่อ-นามสกุล',w:24},{h:'โรงแรม',w:26},{h:'เริ่ม',w:8},{h:'สิ้นสุด',w:8},{h:'พัก (นาที)',w:9,t:'int'},{h:'ชั่วโมง',w:9,t:'dec'},{h:'จำนวนเงิน (บาท)',w:14,t:'num'},{h:'งาน/เหตุผล',w:30},{h:'ตรวจกับสแกนออก',w:20},{h:'สถานะ',w:12}],
+       rows:ots.map(o=>[o.date,o.id,o.name,o.hotel||'',o.start,o.end,num(o.brk),num(o.hours),num(o.amount),o.reason||'',o.check||'',o.status||'รออนุมัติ']),
+       total:['รวม','','','','','','',S(ots,'hours'),S(ots,'amount'),'','','']},
+      {name:'บันทึกสแกน', title:'บันทึกการสแกนเข้า-ออกงาน', subtitle:sub,
+       cols:[{h:'วันที่',w:12},{h:'เวลา',w:9},{h:'รหัส',w:10},{h:'ชื่อ-นามสกุล',w:24},{h:'เข้า/ออก',w:9},{h:'โรงแรม',w:26},{h:'ห่างจุดสแกน (ม.)',w:12,t:'int'},{h:'GPS ± (ม.)',w:10,t:'int'},{h:'หมายเหตุ',w:22},{h:'แผนที่',w:36},{h:'รูปหลักฐาน',w:40}],
+       rows:ats.map(a=>[a.ts.slice(0,10),a.ts.slice(11,16),a.id,a.name,a.type==='in'?'เข้า':'ออก',a.hotel||'',num(a.dist),num(a.acc),a.place||'',a.lat?`https://maps.google.com/?q=${a.lat},${a.lng}`:'',String(a.photo||'').startsWith('http')?a.photo:''])}
+    ]});
+    XLSX_LITE.download(blob,`รายงานลงเวลา-${m}.xlsx`);
+  }catch(e){toast('สร้างไฟล์ไม่สำเร็จ: '+e.message)}
+  b.disabled=false;
 });
 $('fMonth').value=ymd(new Date()).slice(0,7); $('fDay').value=ymd(new Date());
 
