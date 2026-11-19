@@ -96,7 +96,7 @@ nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-auto-flow:column;gr
 nav button{border:0;border-radius:0;height:64px;background:none;color:var(--mute);font-size:14px}
 nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--gold)}
 .view{display:none}.view.on{display:block}
-#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;max-width:92vw;display:none;z-index:9}
+#toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;max-width:92vw;display:none;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:8}
 .modal.on{display:flex}.sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto}
 .prev{width:100%;border-radius:12px;margin-top:8px;display:none}
@@ -133,6 +133,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <label>สังกัดโรงแรม</label><div class="hotels" data-name="rHotel"></div>
       <p></p><button class="pri" id="bReg">สแกนนิ้วเพื่อลงทะเบียน</button>
     </div>
+    <p class="note" style="text-align:center"><a href="#" id="lnkAdm">เข้าสู่ระบบแอดมิน</a></p>
   </section>
 
   <!-- ลงเวลา -->
@@ -186,6 +187,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       </div>
       <p></p><button class="pri" id="bSave">บันทึก</button>
     </div>
+    <div class="card"><h2>แอดมิน</h2><p class="note" id="admState"></p><button id="bAdm" style="width:100%"></button></div>
     <div class="card" id="calCard" hidden>
       <h2>วัดพิกัดจุดสแกน (แอดมิน)</h2>
       <p class="note">ไปยืนตรงจุดที่ให้พนักงานสแกน เช่น ทางเข้าพนักงาน แล้วกดวัด ระบบจะเก็บค่า GPS ประมาณ 30 วินาทีแล้วหาค่าเฉลี่ยจากค่าที่แม่นที่สุด</p>
@@ -201,7 +203,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <section class="view" id="vRep">
     <div style="display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap">
       <div><h2 style="margin:0">รายงานลงเวลา &amp; OT<span class="admin-badge">แอดมิน</span></h2><div class="note" id="rAsof"></div></div>
-      <div class="acts"><button id="rReload">รีเฟรช</button><button id="rCsv">ส่งออก CSV</button></div>
+      <div class="acts"><button id="rReload">รีเฟรช</button><button id="rCsv">ส่งออก CSV</button><button id="rLogout">ออกจากระบบแอดมิน</button></div>
     </div>
     <div class="card filters">
       <div><label for="fMonth">เดือน</label><input type="month" id="fMonth"></div>
@@ -237,6 +239,14 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <label for="mPlace">แผนก / จุดปฏิบัติงาน / หมายเหตุ</label><input id="mPlace" placeholder="เช่น จัดเลี้ยง ชั้น 22">
   <p></p><div class="row"><button id="mCancel">ยกเลิก</button><button class="pri" id="mGo" disabled>บันทึก</button></div>
 </div></div>
+<div class="modal" id="aMod"><div class="sheet">
+  <h2>เข้าสู่ระบบแอดมิน</h2>
+  <form id="aForm">
+    <label for="aName">ผู้ดูแลระบบ</label><input id="aName" readonly>
+    <label for="aPass">รหัสผ่าน</label><input id="aPass" type="password" autocomplete="current-password">
+    <p></p><div class="row"><button type="button" id="aCancel">ยกเลิก</button><button class="pri" id="aGo">เข้าสู่ระบบ</button></div>
+  </form>
+</div></div>
 <div id="toast"></div>
 
 <script src="config.js"></script>
@@ -246,7 +256,9 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 const SCRIPT_URL = window.TC_SCRIPT_URL || '';
 // ค่า OT ต่อชั่วโมง (บาท) อัตราเดียวทุกคน ทุกวัน
 const OT_RATE = 60;
-const ADMIN_NAME = 'ชัชวาลย์'; // โหมดทดลอง: ลงทะเบียนชื่อนี้จะได้สิทธิ์แอดมิน (ของจริงกำหนดในชีต Employees)
+// แอดมิน: เก็บเฉพาะค่า hash ของรหัสผ่าน (ไม่มีรหัสจริงอยู่ในโค้ด)
+const ADMIN = {name:'ชัชวาลย์ ต่อสุวรรณ', salt:'tc-baiyoke-queensland:', hash:'b058e5e8c4c48aad9af40a81294fb303942ac0f8c692b52a3f7da25d9cb6fbfc'};
+const sha256 = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 
 // จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
 // เมื่อเชื่อม Google Sheets แล้ว ค่าจะมาจากชีต Hotels แทน (แก้ได้โดยไม่ต้องแก้โค้ด)
@@ -351,8 +363,10 @@ async function api(action, data){
     const j = await r.json(); if(!j.ok) throw new Error(j.error||'บันทึกไม่สำเร็จ'); return j;
   }
   const db = store.get('tc_db',{att:[],ot:[]}), now = new Date(), ts = ymd(now)+' '+hm(now)+':'+pad(now.getSeconds());
-  if(action==='register') return {ok:true, profile:wage, role:String(data.name).includes(ADMIN_NAME)?'admin':'staff'};
-  if(action==='report'){ const me2=store.get('tc_me',{}); return {ok:true, rate:OT_RATE, emp:[{id:me2.id,name:me2.name,hotel:hotelOf(me2.hotel).name,registered:true,role:me2.role}],
+  if(action==='register') return {ok:true, profile:wage};
+  if(['adminLogin','report','otStatus'].includes(action) && await sha256(ADMIN.salt+(data.adminPass||''))!==ADMIN.hash) throw new Error('รหัสผ่านแอดมินไม่ถูกต้อง');
+  if(action==='adminLogin') return {ok:true, name:ADMIN.name};
+  if(action==='report'){ const me2=store.get('tc_me',{}); return {ok:true, rate:OT_RATE, emp:me2.id?[{id:me2.id,name:me2.name,hotel:hotelOf(me2.hotel).name,registered:true}]:[],
     att:db.att.map(a=>({...a,id:me2.id,name:me2.name})), ot:db.ot.map((o,i)=>({...o,id:me2.id,name:me2.name,row:i}))} }
   if(action==='otStatus'){ if(db.ot[data.row]) db.ot[data.row].status=data.status; store.set('tc_db',db); return {ok:true} }
   if(action==='clock'){ db.att.push({ts, type:data.type, lat:data.gps.lat, lng:data.gps.lng, acc:data.gps.acc, place:data.place, hotel:data.hotel, dist:data.dist, inArea:data.inArea, photo:data.photo}); store.set('tc_db',db); return {ok:true, ts} }
@@ -363,7 +377,7 @@ async function api(action, data){
     db.ot.push({ts, ...data, ...c, check, status:'รออนุมัติ'}); store.set('tc_db',db); return {ok:true, ...c, check};
   }
   if(action==='list') return {ok:true, att:db.att, ot:db.ot};
-  if(action==='profile') return {ok:true, profile:wage, role:me&&me.role};
+  if(action==='profile') return {ok:true, profile:wage};
 }
 
 // ---------- นาฬิกา ----------
@@ -372,21 +386,24 @@ function tick(){const d=new Date();$('tNow').textContent=hm(d);$('dNow').textCon
 tick(); setInterval(tick,1000);
 
 // ---------- นำทาง ----------
-const isAdmin = () => !!me && me.role==='admin';
+let adminPass = (()=>{try{return sessionStorage.getItem('tc_admin')}catch{return null}})();
+const isAdmin = () => !!adminPass;
 function show(v){
-  if(!me) v='vReg';
-  if(v==='vRep' && !isAdmin()) v='vClock';
+  if(v==='vRep' && !isAdmin()){ openAdminLogin(); return }
+  if(!me && v!=='vRep') v='vReg';
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id===v));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  $('nav').style.display = me ? '' : 'none';
+  $('nav').style.display = (me||isAdmin()) ? '' : 'none';
   document.body.classList.toggle('wide', v==='vRep');
   if(v==='vHist') loadHist();
   if(v==='vRep') openReport();
 }
 $('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) show(b.dataset.v)});
 function renderMe(){
-  $('who').textContent = me ? `${me.name} · ${me.id}${isAdmin()?' · แอดมิน':''}` : 'ยังไม่ได้ลงทะเบียน';
+  $('who').textContent = (me ? `${me.name} · ${me.id}` : 'ยังไม่ได้ลงทะเบียน') + (isAdmin()?' · แอดมิน':'');
   $('navRep').hidden = !isAdmin(); $('calCard').hidden = !isAdmin();
+  $('admState').textContent = isAdmin() ? `เข้าสู่ระบบแอดมินแล้ว (${ADMIN.name})` : 'สำหรับผู้ดูแลระบบ: ดูรายงานพนักงานทุกคน อนุมัติ OT และวัดพิกัดจุดสแกน';
+  $('bAdm').textContent = isAdmin() ? 'ออกจากระบบแอดมิน' : 'เข้าสู่ระบบแอดมิน';
   $('devInfo').textContent = me ? `ผูกกับ ${me.name} (${me.id}) ตั้งแต่ ${me.since}` : '';
   $('wStart').value=wage.start||'08:00'; $('wEnd').value=wage.end||'17:00';
   if(SCRIPT_URL){['wStart','wEnd','bSave'].forEach(i=>$(i).disabled=true)}
@@ -402,7 +419,7 @@ $('bReg').addEventListener('click', async()=>{
   try{
     const cred = await registerFinger(id,name);
     const r = await api('register',{empId:id, name, hotel:hotelOf(hotel).name, credId:cred, device:navigator.userAgent});
-    me = {id, name, hotel, cred, role:r.role||'staff', since:ymd(new Date())}; store.set('tc_me',me);
+    me = {id, name, hotel, cred, since:ymd(new Date())}; store.set('tc_me',me);
     if(r.profile){wage={...wage,...r.profile}; store.set('tc_wage',wage)} if(r.hotels) applyHotelPos(r.hotels);
     renderMe(); show('vClock'); toast('ลงทะเบียนสำเร็จ');
   }catch(e){toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกการสแกน':e.message)}
@@ -563,21 +580,29 @@ $('coverHi').textContent = me ? `สวัสดี คุณ${me.name}` : '';
 if(me) setTimeout(hideCover, 2200);
 
 // ---------- รายงาน (แอดมิน) ----------
-let RD={att:[],ot:[],emp:[],rate:OT_RATE}, adminOk=false;
+let RD={att:[],ot:[],emp:[],rate:OT_RATE};
 const short = h => String(h||'').includes('Queensland') ? 'Queensland' : String(h||'').includes('Baiyoke') ? 'Baiyoke Sky' : (h||'-');
-async function openReport(){
-  if(!adminOk){
-    try{ await verifyFinger(); adminOk=true }
-    catch(e){ toast(e.name==='NotAllowedError'?'ต้องสแกนนิ้วเพื่อเปิดรายงาน':e.message); show('vClock'); return }
-  }
-  loadReport();
-}
+function openReport(){ loadReport() }
+function openAdminLogin(){ $('aPass').value=''; $('aMod').classList.add('on'); setTimeout(()=>$('aPass').focus(),80) }
+function adminLogout(){ adminPass=null; try{sessionStorage.removeItem('tc_admin')}catch{} renderMe(); show(me?'vClock':'vReg'); toast('ออกจากระบบแอดมินแล้ว') }
+$('aForm').addEventListener('submit', async e=>{
+  e.preventDefault(); const pass=$('aPass').value; if(!pass) return;
+  $('aGo').disabled=true;
+  try{ await api('adminLogin',{adminPass:pass}); adminPass=pass; try{sessionStorage.setItem('tc_admin',pass)}catch{}
+    $('aMod').classList.remove('on'); hideCover(); renderMe(); show('vRep'); toast('ยินดีต้อนรับ คุณ'+ADMIN.name) }
+  catch(err){ toast(err.message); $('aPass').select() }
+  $('aGo').disabled=false;
+});
+$('aCancel').addEventListener('click',()=>$('aMod').classList.remove('on'));
+$('bAdm').addEventListener('click',()=> isAdmin()?adminLogout():openAdminLogin());
+$('lnkAdm').addEventListener('click',e=>{e.preventDefault();openAdminLogin()});
+$('rLogout').addEventListener('click',adminLogout);
 async function loadReport(){
   $('rReload').disabled=true;
-  try{ RD = await api('report',{empId:me.id, credId:me.cred, month:$('fMonth').value});
+  try{ RD = await api('report',{adminPass, month:$('fMonth').value});
     $('rAsof').textContent='ข้อมูล ณ '+new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})+(SCRIPT_URL?'':' · โหมดทดลอง: เห็นเฉพาะข้อมูลในเครื่องนี้');
     renderReport() }
-  catch(e){ toast(e.message); if(/สิทธิ์/.test(e.message)){ me.role='staff'; store.set('tc_me',me); renderMe(); show('vClock') } }
+  catch(e){ toast(e.message); if(/รหัสผ่านแอดมิน|ล็อก/.test(e.message)) adminLogout() }
   $('rReload').disabled=false;
 }
 function rFiltered(){
@@ -610,7 +635,7 @@ function renderReport(){
   const al=[...att].sort((a,b)=>b.ts.localeCompare(a.ts));
   $('pAll').innerHTML = al.length?`<div class="card scroll"><table class="stack"><thead><tr><th>เวลา</th><th>พนักงาน</th><th>เข้า/ออก</th><th>โรงแรม</th><th class="n">ห่างจุดสแกน</th><th class="n">GPS ±</th><th>หมายเหตุ</th><th>หลักฐาน</th></tr></thead><tbody>${al.map(a=>`<tr><td class="t">${esc(a.ts.slice(0,16))}</td><td>${esc(a.name)}</td><td>${a.type==='in'?'เข้า':'ออก'}</td><td>${esc(short(a.hotel))}</td><td class="n">${a.dist!==''&&a.dist!=null?a.dist+' ม.':'-'}</td><td class="n">${a.acc??'-'} ม.</td><td>${esc(a.place||'')}</td><td>${mapA(a,'แผนที่')} ${photoA(a.photo)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">ไม่มีการสแกนเดือนนี้</div>';
   const st=[...(RD.emp||[])].sort((a,b)=>String(a.name).localeCompare(String(b.name),'th'));
-  $('pStaff').innerHTML = st.length?`<div class="card scroll"><table class="stack"><thead><tr><th>รหัส</th><th>ชื่อ</th><th>สังกัด</th><th>สิทธิ์</th><th>สถานะเครื่อง</th></tr></thead><tbody>${st.map(e=>`<tr><td>${esc(e.id)}</td><td>${esc(e.name)}</td><td>${esc(short(e.hotel))}</td><td>${e.role==='admin'?'<span class="pill ok">แอดมิน</span>':'พนักงาน'}</td><td>${e.registered?'ลงทะเบียนแล้ว':'<span class="pill wait">ยังไม่ผูกเครื่อง</span>'}</td></tr>`).join('')}</tbody></table><p class="note">เปลี่ยนสิทธิ์หรือรีเซ็ตเครื่องของพนักงานได้ที่ชีต Employees (คอลัมน์ "สิทธิ์" และ "credentialId")</p></div>`:'<div class="card empty">ยังไม่มีพนักงาน</div>';
+  $('pStaff').innerHTML = st.length?`<div class="card scroll"><table class="stack"><thead><tr><th>รหัส</th><th>ชื่อ</th><th>สังกัด</th><th>สถานะเครื่อง</th></tr></thead><tbody>${st.map(e=>`<tr><td>${esc(e.id)}</td><td>${esc(e.name)}</td><td>${esc(short(e.hotel))}</td><td>${e.registered?'ลงทะเบียนแล้ว':'<span class="pill wait">ยังไม่ผูกเครื่อง</span>'}</td></tr>`).join('')}</tbody></table><p class="note">ถ้าพนักงานเปลี่ยนมือถือ ให้ลบช่อง "credentialId" ของคนนั้นในชีต Employees แล้วให้เขาลงทะเบียนใหม่</p></div>`:'<div class="card empty">ยังไม่มีพนักงาน</div>';
 }
 $('rTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#rTabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('#vRep .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p))});
 $('fMonth').addEventListener('change',()=>{if(!$('fDay').value.startsWith($('fMonth').value))$('fDay').value=$('fMonth').value+'-01';loadReport()});
@@ -618,7 +643,7 @@ $('fMonth').addEventListener('change',()=>{if(!$('fDay').value.startsWith($('fMo
 $('rReload').addEventListener('click',loadReport);
 $('pOt').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-s]'); if(!b) return; const bs=b.closest('.acts').querySelectorAll('button'); bs.forEach(x=>x.disabled=true);
-  try{ await api('otStatus',{empId:me.id,credId:me.cred,row:+b.dataset.row,id:b.dataset.id,status:b.dataset.s}); const o=RD.ot.find(x=>x.row===+b.dataset.row); if(o)o.status=b.dataset.s; renderReport(); toast(b.dataset.s+'แล้ว') }
+  try{ await api('otStatus',{adminPass,row:+b.dataset.row,id:b.dataset.id,status:b.dataset.s}); const o=RD.ot.find(x=>x.row===+b.dataset.row); if(o)o.status=b.dataset.s; renderReport(); toast(b.dataset.s+'แล้ว') }
   catch(err){ toast(err.message); bs.forEach(x=>x.disabled=false) }
 });
 $('rCsv').addEventListener('click',()=>{
@@ -633,13 +658,14 @@ $('rCsv').addEventListener('click',()=>{
 });
 $('fMonth').value=ymd(new Date()).slice(0,7); $('fDay').value=ymd(new Date());
 
+$('aName').value = ADMIN.name;
 // ---------- เริ่ม ----------
 applyHotelPos(store.get('tc_hotelpos',[]));
 const now=new Date(); $('oDate').value=ymd(now); $('oStart').value=wage.end||'17:00'; $('hMonth').value=ymd(now).slice(0,7);
 if(!window.isSecureContext) toast('ต้องเปิดผ่าน https เท่านั้น จึงจะใช้สแกนนิ้วและ GPS ได้',6000);
 pickHotel('rHotel','baiyoke'); pickHotel('cHotel','baiyoke'); calForm(); pickHotel('oHotel', store.get('tc_hotel', me?.hotel||'baiyoke'));
 renderMe(); show('vClock'); refreshCalc();
-if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.role&&r.role!==me.role){me.role=r.role;store.set('tc_me',me)} if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage)} renderMe();refreshCalc(); if(r.hotels){applyHotelPos(r.hotels);calForm()}}).catch(()=>{}) }
+if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage)} renderMe();refreshCalc(); if(r.hotels){applyHotelPos(r.hotels);calForm()}}).catch(()=>{}) }
 }
 </script>
 </body>
