@@ -205,8 +205,8 @@ const OT_RATE = 60;
 // จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
 // เมื่อเชื่อม Google Sheets แล้ว ค่าจะมาจากชีต Hotels แทน (แก้ได้โดยไม่ต้องแก้โค้ด)
 const HOTELS = [
-  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754400, lng:100.540583, radius:10, maxAcc:20},
-  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756750, lng:100.538559, radius:10, maxAcc:20}
+  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754400, lng:100.540583, radius:50, maxAcc:30},
+  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756750, lng:100.538559, radius:50, maxAcc:30}
 ];
 const $ = id => document.getElementById(id);
 const store = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
@@ -487,7 +487,7 @@ $('bCal').addEventListener('click', async()=>{
     const top = g.samples.filter(x=>x.acc<=Math.max(g.acc*1.5, g.acc+5)), w=top.map(x=>1/(x.acc*x.acc)), W=w.reduce((a,c)=>a+c,0);
     const lat=+(top.reduce((a,x,i)=>a+x.lat*w[i],0)/W).toFixed(6), lng=+(top.reduce((a,x,i)=>a+x.lng*w[i],0)/W).toFixed(6);
     const h=hotelOf(getHotel('cHotel'));
-    cal={id:h.id, lat, lng, radius:+$('cRad').value||10, maxAcc:+$('cAcc').value||20};
+    cal={id:h.id, lat, lng, radius:+$('cRad').value||50, maxAcc:+$('cAcc').value||30};
     $('cOut').innerHTML=`<b>${h.th}</b><br>พิกัด: <b>${lat}, ${lng}</b><br>ความแม่นยำ ±${g.acc} ม. จาก ${g.samples.length} ค่า · <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener">ตรวจบนแผนที่</a>
       <div class="row" style="margin-top:10px"><button id="cCopy" type="button">คัดลอก</button><button id="cUse" type="button">ใช้ในเครื่องนี้</button></div>
       <p class="note">${SCRIPT_URL?'นำตัวเลขไปใส่ในชีต Hotels (คอลัมน์ lat, lng) เพื่อให้มีผลกับพนักงานทุกคน':'ตอนนี้เป็นโหมดทดลอง กด "ใช้ในเครื่องนี้" เพื่อทดสอบ แล้วส่งตัวเลขให้ผู้ดูแลระบบใส่ถาวร'}</p>`;
