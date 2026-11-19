@@ -257,7 +257,7 @@ const SCRIPT_URL = window.TC_SCRIPT_URL || '';
 // ค่า OT ต่อชั่วโมง (บาท) อัตราเดียวทุกคน ทุกวัน
 const OT_RATE = 60;
 // แอดมิน: เก็บเฉพาะค่า hash ของรหัสผ่าน (ไม่มีรหัสจริงอยู่ในโค้ด)
-const ADMIN = {name:'ชัชวาลย์ ต่อสุวรรณ', salt:'tc-baiyoke-queensland:', hash:'b058e5e8c4c48aad9af40a81294fb303942ac0f8c692b52a3f7da25d9cb6fbfc'};
+const ADMIN = {name:'ชัชวาลย์ ต่อสุวรรณ', salt:'tc-baiyoke-queensland:', hash:'e8162daedddbbab76011664c0e7676be4de7135ff75784a56374eab865275732'};
 const sha256 = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 
 // จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
