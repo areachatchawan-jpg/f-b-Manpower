@@ -5,40 +5,54 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ลงเวลาพนักงาน · Baiyoke &amp; Queensland</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600&display=swap" rel="stylesheet">
 <style>
-/* VOICE: เครื่องมือทำงาน เงียบ ชัด เชื่อถือได้
-   IDEA: เครื่องตอกบัตรพกพา นาฬิกาใหญ่ ปุ่มเข้า/ออกใหญ่
-   PICTURE: นาฬิกาสดตัวใหญ่ + ปุ่มสแกนนิ้ว
-   COLOUR and TYPE: ขาว/ดำ น้ำเงินสัญญาณ ส้มสำหรับออก, IBM Plex Sans Thai
+/* VOICE: เรียบหรู แบบเคาน์เตอร์ต้อนรับโรงแรม
+   IDEA: บัตรลงเวลาของโรงแรม หน้าปกโลโก้ + นาฬิกาตัวเซอริฟ
+   PICTURE: หน้าปกโลโก้คู่ แล้วนาฬิกาใหญ่ + ปุ่มสแกนนิ้ว
+   COLOUR and TYPE: เทาถ่าน #4b4b4d (Queensland), ดำ #191718 + น้ำตาลเทา #7b7062/#b0a89c (Baiyoke), Cormorant/Noto Serif Thai + IBM Plex Sans Thai
    LAYOUT: คอลัมน์เดียวแบบแอปมือถือ แท็บล่าง */
-:root{color-scheme:light dark;--bg:light-dark(#f5f5f2,#121314);--card:light-dark(#fff,#1c1d1f);--ink:light-dark(#141414,#efefec);--mute:light-dark(#66675f,#a2a39c);--line:light-dark(#e2e2dc,#2e3033);--in:#1f5eff;--out:#e8590c;--ok:#1a7f4b;--bad:#c92a2a}
+:root{color-scheme:light dark;--bg:light-dark(#f6f4f0,#191817);--card:light-dark(#fff,#232220);--ink:light-dark(#2a292a,#f1eee9);--mute:light-dark(#7b7062,#b0a89c);--line:light-dark(#e7e2da,#393633);--in:light-dark(#4b4b4d,#5e5e61);--out:light-dark(#8a7d6b,#8f826f);--gold:light-dark(#7b7062,#c8bdb0);--ok:light-dark(#3d7552,#7fbf95);--bad:light-dark(#a8402f,#e58a7a);--num:light-dark(#4b4b4d,#ece8e2);--serif:"Cormorant Garamond","Noto Serif Thai",Georgia,serif}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans Thai",system-ui,sans-serif;overflow-x:clip;padding-bottom:84px}
 main{max-width:560px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:0}h2{font-size:18px;margin:0 0 12px}
-.brand{background:#fff;border-bottom:1px solid #e2e2dc;display:flex;align-items:center;justify-content:center;gap:clamp(16px,6vw,40px);padding:12px 16px}
-.brand img{height:clamp(52px,14vw,68px);width:auto;object-fit:contain}.brand i{width:1px;height:40px;background:#d6d6cf}
+h1,h2{font-family:"Noto Serif Thai",var(--serif);font-weight:600;color:var(--ink)}
+h1{font-size:21px;margin:0}h2{font-size:18px;margin:0 0 12px}
+#cover{position:fixed;inset:0;z-index:20;background:#fff;color:#2a292a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));transition:opacity .5s,visibility .5s}
+#cover.off{opacity:0;visibility:hidden}
+#cover .logos{display:flex;flex-direction:column;align-items:center;gap:22px}
+#cover .logos img{width:min(62vw,260px);height:auto}
+#cover .rule{width:120px;height:1px;background:#b0a89c;position:relative;margin:4px 0}
+#cover .rule::after{content:"";position:absolute;left:50%;top:-3px;width:7px;height:7px;background:#fff;border:1px solid #b0a89c;transform:translateX(-50%) rotate(45deg)}
+#cover h1{color:#2a292a;font-size:clamp(26px,7vw,34px);margin:30px 0 4px;line-height:1.25}
+#cover .sub{font-family:var(--serif);font-size:17px;letter-spacing:.06em;color:#7b7062}
+#cover .hi{margin-top:18px;color:#4b4b4d;min-height:1.5em}
+#cover button{margin-top:22px;width:min(100%,320px);min-height:52px;border-radius:99px;background:#4b4b4d;color:#fff;border:0;font-weight:600;font-size:17px}
+#cover small{margin-top:auto;padding-top:24px;color:#9a9088;font-size:13px}
+.brand{background:#fff;border-bottom:2px solid #b0a89c;display:flex;align-items:center;justify-content:center;gap:clamp(16px,6vw,40px);padding:12px 16px}
+.brand img{height:clamp(52px,14vw,68px);width:auto;object-fit:contain}.brand i{width:1px;height:40px;background:#b0a89c}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0 4px}
 .hotels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hotels label{margin:0;cursor:pointer;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 8px 8px;text-align:center;color:#141414;font-size:13px;line-height:1.3}
 .hotels img{height:52px;width:100%;object-fit:contain;display:block;margin-bottom:6px}
 .hotels input{position:absolute;opacity:0;width:1px;height:1px}
-.hotels label:has(input:checked){border-color:var(--in);box-shadow:0 0 0 3px color-mix(in srgb,var(--in) 25%,transparent)}
+.hotels label:has(input:checked){border-color:#7b7062;box-shadow:0 0 0 3px rgba(176,168,156,.35)}
 .hotels label:has(input:focus-visible){outline:3px solid var(--in);outline-offset:2px}
 .dist{font-size:13px;margin-top:6px}.dist.ok{color:var(--ok)}.dist.bad{color:var(--bad)}
 .who{font-size:14px;color:var(--mute)}.mode{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--line)}
 .clock{text-align:center;padding:22px 0 10px}
-.time{font-size:clamp(52px,17vw,84px);font-weight:600;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.time{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(68px,22vw,104px);font-weight:600;line-height:.95;font-variant-numeric:lining-nums tabular-nums;color:var(--num)}
+.clock::after{content:"";display:block;width:90px;height:1px;background:var(--gold);margin:14px auto 0;opacity:.6}
 .date{color:var(--mute);margin-top:6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
 .big{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
 .big button{height:120px;border-radius:18px;font-size:20px;font-weight:600;color:#fff;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .big svg{width:40px;height:40px}
 #bIn{background:var(--in)}#bOut{background:var(--out)}
+.big button{box-shadow:0 10px 24px -14px rgba(43,40,36,.6);letter-spacing:.01em}
 button,.btn{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 16px;cursor:pointer}
-button.pri{background:var(--ink);color:var(--bg);border:0;font-weight:600;width:100%}
+button.pri{background:var(--in);color:#fff;border:0;font-weight:600;width:100%;border-radius:99px}
 button:disabled{opacity:.5}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--in);outline-offset:2px}
 label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
@@ -47,28 +61,41 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;min-height:44px;bor
 .steps{list-style:none;padding:0;margin:0}.steps li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
 .st{white-space:nowrap;font-weight:600}.st.ok{color:var(--ok)}.st.bad{color:var(--bad)}.st.wait{color:var(--mute)}
 .calc{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-top:1px solid var(--line);margin-top:12px}
-.calc b{font-size:32px;font-variant-numeric:tabular-nums}
+.calc b{font-family:"Cormorant Garamond",Georgia,serif;font-size:40px;font-variant-numeric:lining-nums tabular-nums;color:var(--num)}
 .sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
-.sum div{background:var(--bg);border-radius:12px;padding:10px 4px}.sum b{display:block;font-size:22px;font-variant-numeric:tabular-nums}.sum span{font-size:13px;color:var(--mute)}
+.sum div{background:var(--bg);border-radius:12px;padding:10px 4px}.sum b{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;color:var(--num);font-variant-numeric:tabular-nums}.sum span{font-size:13px;color:var(--mute)}
 .rec{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .rec img,.rec .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--line)}
 .rec small{display:block;color:var(--mute);font-size:13px}
 .tag{font-size:13px;padding:2px 8px;border-radius:99px;color:#fff;white-space:nowrap}
-.tag.in{background:var(--in)}.tag.out{background:var(--out)}.tag.ot{background:#5f3dc4}
-a{color:var(--in)}
+.tag.in{background:var(--in)}.tag.out{background:var(--out)}.tag.ot{background:var(--gold)}
+a{color:var(--gold)}
 nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{border:0;border-radius:0;height:64px;background:none;color:var(--mute);font-size:14px}
-nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in)}
+nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--gold)}
 .view{display:none}.view.on{display:block}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;max-width:92vw;display:none;z-index:9}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:8}
 .modal.on{display:flex}.sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto}
 .prev{width:100%;border-radius:12px;margin-top:8px;display:none}
 .note{font-size:13px;color:var(--mute)}
-@media(prefers-reduced-motion:no-preference){.big button:active{transform:scale(.97)}.big button{transition:transform .1s}}
+@media(prefers-reduced-motion:reduce){#cover{transition:none}}
+@media(prefers-reduced-motion:no-preference){#cover .logos{animation:rise .9s ease-out both}@keyframes rise{from{opacity:0;transform:translateY(12px)}}.big button:active{transform:scale(.97)}.big button{transition:transform .1s}}
 </style>
 </head>
 <body>
+<section id="cover" aria-label="หน้าปก">
+  <div class="logos">
+    <img src="logo-queensland.png" alt="Queensland Hotel Bangkok">
+    <div class="rule"></div>
+    <img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok" style="width:min(48vw,200px)">
+  </div>
+  <h1>ระบบลงเวลาพนักงาน</h1>
+  <div class="sub">Time Attendance &amp; Overtime</div>
+  <div class="hi" id="coverHi"></div>
+  <button id="bCover">เข้าสู่ระบบ</button>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT</small>
+</section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
   <div class="top"><div><h1>ระบบลงเวลาพนักงาน</h1><div class="who" id="who">ยังไม่ได้ลงทะเบียน</div></div><span class="mode" id="mode"></span></div>
@@ -473,6 +500,13 @@ $('cOut').addEventListener('click', async e=>{
   if(e.target.id==='cCopy'){ try{await navigator.clipboard.writeText(`${cal.id}: ${cal.lat}, ${cal.lng} รัศมี ${cal.radius} ม. GPS ±${cal.maxAcc} ม.`);toast('คัดลอกแล้ว')}catch{toast('คัดลอกไม่ได้ กรุณาจดตัวเลขแทน')} }
   if(e.target.id==='cUse'){ const l=store.get('tc_hotelpos',[]).filter(x=>x.id!==cal.id); l.push(cal); store.set('tc_hotelpos',l); applyHotelPos([cal]); calForm(); toast('ใช้พิกัดใหม่ในเครื่องนี้แล้ว') }
 });
+
+// ---------- หน้าปก ----------
+const hideCover = () => $('cover').classList.add('off');
+$('bCover').addEventListener('click', hideCover);
+$('bCover').textContent = me ? 'เข้าสู่ระบบ' : 'เริ่มลงทะเบียน';
+$('coverHi').textContent = me ? `สวัสดี คุณ${me.name}` : '';
+if(me) setTimeout(hideCover, 2200);
 
 // ---------- เริ่ม ----------
 applyHotelPos(store.get('tc_hotelpos',[]));
