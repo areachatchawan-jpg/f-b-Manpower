@@ -8,9 +8,9 @@ const PHOTO_FOLDER = 'หลักฐานลงเวลา';
 const RATES = { ot: 1.5, holidayOt: 3, holiday: { monthly: 1, daily: 2 } }; // ตาม พ.ร.บ.คุ้มครองแรงงาน
 const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' };
 
-const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์'];
-const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์'];
-const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'ค่าจ้าง/ชม.', 'จำนวนเงิน', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ'];
+const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
+const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
+const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'ค่าจ้าง/ชม.', 'จำนวนเงิน', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
 
 function doPost(e) {
   try {
@@ -64,10 +64,10 @@ function register(d) {
   const e = findEmp(d.empId);
   if (e && e.v[6]) throw new Error('รหัสนี้ลงทะเบียนเครื่องอื่นไว้แล้ว ให้ HR ลบช่อง credentialId ก่อน');
   if (e) {
-    e.s.getRange(e.row, 7, 1, 3).setValues([[d.credId, now(), d.device || '']]);
+    e.s.getRange(e.row, 7, 1, 4).setValues([[d.credId, now(), d.device || '', d.hotel || e.v[9] || '']]);
     return { profile: wageOf(findEmp(d.empId)) };
   }
-  sheet('Employees', H_EMP).appendRow([d.empId, d.name, DEFAULT_WAGE.type, DEFAULT_WAGE.amount, DEFAULT_WAGE.start, DEFAULT_WAGE.end, d.credId, now(), d.device || '']);
+  sheet('Employees', H_EMP).appendRow([d.empId, d.name, DEFAULT_WAGE.type, DEFAULT_WAGE.amount, DEFAULT_WAGE.start, DEFAULT_WAGE.end, d.credId, now(), d.device || '', d.hotel || '']);
   return { profile: DEFAULT_WAGE };
 }
 
@@ -87,7 +87,7 @@ function clock(d) {
   if (!g.lat) throw new Error('ไม่มีพิกัด GPS');
   if (!d.photo) throw new Error('ไม่มีรูปหลักฐาน');
   const url = savePhoto(d.photo, d.empId + '_' + d.type + '_' + ts.replace(/[: ]/g, '-'));
-  sheet('Attendance', H_ATT).appendRow([ts, d.empId, e.v[1], d.type === 'in' ? 'เข้า' : 'ออก', g.lat, g.lng, g.acc, mapUrl(g), url, d.place || '', d.clientTime || '', 'ผ่าน', d.device || '']);
+  sheet('Attendance', H_ATT).appendRow([ts, d.empId, e.v[1], d.type === 'in' ? 'เข้า' : 'ออก', g.lat, g.lng, g.acc, mapUrl(g), url, d.place || '', d.clientTime || '', 'ผ่าน', d.device || '', d.hotel || '', d.dist == null ? '' : d.dist, d.inArea === false ? 'นอกพื้นที่' : 'ในพื้นที่']);
   return { ts };
 }
 
@@ -113,7 +113,7 @@ function ot(d) {
   const check = overnight ? 'OT ข้ามคืน ตรวจด้วยตนเอง' : outs.some(t => t >= d.end) ? 'ตรงกับเวลาสแกนออก' : 'ไม่พบสแกนออกที่ครอบคลุม';
   const label = { ot: 'OT วันทำงาน', holiday: 'ทำงานวันหยุด', holidayOt: 'OT วันหยุด' }[d.type];
   const url = savePhoto(d.photo, d.empId + '_OT_' + d.date);
-  sheet('OT', H_OT).appendRow([now(), d.empId, e.v[1], d.date, d.start, d.end, d.brk || 0, c.hours, label, c.rate, c.hourly, c.amount, d.reason || '', url, mapUrl(d.gps), check, 'รออนุมัติ']);
+  sheet('OT', H_OT).appendRow([now(), d.empId, e.v[1], d.date, d.start, d.end, d.brk || 0, c.hours, label, c.rate, c.hourly, c.amount, d.reason || '', url, mapUrl(d.gps), check, 'รออนุมัติ', d.hotel || '']);
   return Object.assign({ check }, c);
 }
 
@@ -121,9 +121,9 @@ function list(d) {
   auth(d);
   const id = String(d.empId);
   const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-120)
-    .map(r => ({ ts: txt(r[0]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9] }));
+    .map(r => ({ ts: txt(r[0]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9], hotel: r[13], dist: r[14], inArea: r[15] }));
   const typ = { 'OT วันทำงาน': 'ot', 'ทำงานวันหยุด': 'holiday', 'OT วันหยุด': 'holidayOt' };
   const ot = sheet('OT', H_OT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-60)
-    .map(r => ({ date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), hours: r[7], type: typ[r[8]], rate: r[9], amount: r[11], reason: r[12], photo: r[13], check: r[15], status: r[16] }));
+    .map(r => ({ date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), hours: r[7], type: typ[r[8]], rate: r[9], amount: r[11], reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }));
   return { att, ot };
 }

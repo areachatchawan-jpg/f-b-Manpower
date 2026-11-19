@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ลงเวลานอกสถานที่</title>
+<title>ลงเวลาพนักงาน · Baiyoke &amp; Queensland</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -18,7 +18,16 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans Thai",system-ui,sans-serif;overflow-x:clip;padding-bottom:84px}
 main{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:0}h2{font-size:18px;margin:0 0 12px}
+.brand{background:#fff;border-bottom:1px solid #e2e2dc;display:flex;align-items:center;justify-content:center;gap:clamp(16px,6vw,40px);padding:12px 16px}
+.brand img{height:clamp(52px,14vw,68px);width:auto;object-fit:contain}.brand i{width:1px;height:40px;background:#d6d6cf}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0 4px}
+.hotels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hotels label{margin:0;cursor:pointer;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 8px 8px;text-align:center;color:#141414;font-size:13px;line-height:1.3}
+.hotels img{height:52px;width:100%;object-fit:contain;display:block;margin-bottom:6px}
+.hotels input{position:absolute;opacity:0;width:1px;height:1px}
+.hotels label:has(input:checked){border-color:var(--in);box-shadow:0 0 0 3px color-mix(in srgb,var(--in) 25%,transparent)}
+.hotels label:has(input:focus-visible){outline:3px solid var(--in);outline-offset:2px}
+.dist{font-size:13px;margin-top:6px}.dist.ok{color:var(--ok)}.dist.bad{color:var(--bad)}
 .who{font-size:14px;color:var(--mute)}.mode{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--line)}
 .clock{text-align:center;padding:22px 0 10px}
 .time{font-size:clamp(52px,17vw,84px);font-weight:600;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
@@ -60,8 +69,9 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
 </style>
 </head>
 <body>
+<header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
-  <div class="top"><div><h1>ลงเวลานอกสถานที่</h1><div class="who" id="who">ยังไม่ได้ลงทะเบียน</div></div><span class="mode" id="mode"></span></div>
+  <div class="top"><div><h1>ระบบลงเวลาพนักงาน</h1><div class="who" id="who">ยังไม่ได้ลงทะเบียน</div></div><span class="mode" id="mode"></span></div>
 
   <!-- ลงทะเบียน -->
   <section class="view" id="vReg">
@@ -70,6 +80,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
       <p class="note">ทำครั้งเดียวต่อเครื่อง ระบบจะผูกลายนิ้วมือ (หรือ Face ID) ของมือถือเครื่องนี้กับรหัสพนักงานของคุณ</p>
       <label for="rId">รหัสพนักงาน</label><input id="rId" autocomplete="off">
       <label for="rName">ชื่อ-นามสกุล</label><input id="rName">
+      <label>สังกัดโรงแรม</label><div class="hotels" data-name="rHotel"></div>
       <p></p><button class="pri" id="bReg">สแกนนิ้วเพื่อลงทะเบียน</button>
     </div>
   </section>
@@ -88,6 +99,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
   <section class="view" id="vOt">
     <div class="card">
       <h2>ขอทำงานล่วงเวลา (OT)</h2>
+      <label>โรงแรม</label><div class="hotels" data-name="oHotel"></div>
       <label for="oDate">วันที่ทำ OT</label><input type="date" id="oDate">
       <div class="row">
         <div><label for="oStart">เริ่ม</label><input type="time" id="oStart"></div>
@@ -151,7 +163,9 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
   </ul>
   <label for="mPhoto">ถ่ายเซลฟี่หน้างาน</label><input type="file" id="mPhoto" accept="image/*" capture="user">
   <img class="prev" id="mPrev" alt="">
-  <label for="mPlace">สถานที่ / ลูกค้า / หมายเหตุ</label><input id="mPlace">
+  <label>โรงแรมที่ปฏิบัติงาน</label><div class="hotels" data-name="mHotel"></div>
+  <div class="dist" id="mDist"></div>
+  <label for="mPlace">แผนก / จุดปฏิบัติงาน / หมายเหตุ</label><input id="mPlace" placeholder="เช่น จัดเลี้ยง ชั้น 22">
   <p></p><div class="row"><button id="mCancel">ยกเลิก</button><button class="pri" id="mGo" disabled>บันทึก</button></div>
 </div></div>
 <div id="toast"></div>
@@ -163,6 +177,12 @@ const SCRIPT_URL = '';
 // อัตรา OT ตาม พ.ร.บ.คุ้มครองแรงงาน (แก้ได้)
 const RATES = {ot:1.5, holidayOt:3, holiday:{monthly:1, daily:2}};
 
+// สถานที่ปฏิบัติงาน (ตรวจพิกัดให้ตรงกับ Google Maps ก่อนใช้งานจริง)
+const HOTELS = [
+  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754400, lng:100.540583},
+  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756500, lng:100.539500}
+];
+const RADIUS = 800; // เมตร: ไกลกว่านี้จะถูกบันทึกว่า "นอกพื้นที่"
 const $ = id => document.getElementById(id);
 const store = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 const pad = n => String(n).padStart(2,'0');
@@ -173,6 +193,13 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 let me = store.get('tc_me', null);
 let wage = store.get('tc_wage', {type:'monthly', amount:15000, start:'08:00', end:'17:00'});
 
+const hotelOf = id => HOTELS.find(h=>h.id===id) || HOTELS[0];
+function distM(a,b){const r=Math.PI/180,x=(b.lng-a.lng)*r*Math.cos((a.lat+b.lat)/2*r),y=(b.lat-a.lat)*r;return Math.round(Math.hypot(x,y)*6371000)}
+document.querySelectorAll('.hotels').forEach(box=>{
+  box.innerHTML = HOTELS.map((h,i)=>`<label><input type="radio" name="${box.dataset.name}" value="${h.id}"><img src="${h.logo}" alt="">${h.th}</label>`).join('');
+});
+const pickHotel = (name,id) => { const r=document.querySelector(`input[name=${name}][value="${id}"]`); if(r) r.checked=true };
+const getHotel = name => document.querySelector(`input[name=${name}]:checked`)?.value || '';
 function toast(t, ms=3000){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',ms)}
 $('mode').textContent = SCRIPT_URL ? 'เชื่อมต่อ Google Sheets' : 'โหมดทดลอง';
 
@@ -187,7 +214,7 @@ async function registerFinger(id, name){
   const ok = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   if(!ok) throw new Error('เครื่องนี้ยังไม่ได้ตั้งค่าลายนิ้วมือหรือ Face ID');
   const c = await navigator.credentials.create({publicKey:{
-    challenge:rand(32), rp:{name:'ลงเวลานอกสถานที่'},
+    challenge:rand(32), rp:{name:'ลงเวลาพนักงาน Baiyoke Queensland'},
     user:{id:new TextEncoder().encode(id), name:id, displayName:name},
     pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
     authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred'},
@@ -247,7 +274,7 @@ async function api(action, data){
   }
   const db = store.get('tc_db',{att:[],ot:[]}), now = new Date(), ts = ymd(now)+' '+hm(now)+':'+pad(now.getSeconds());
   if(action==='register') return {ok:true, profile:wage};
-  if(action==='clock'){ db.att.push({ts, type:data.type, lat:data.gps.lat, lng:data.gps.lng, acc:data.gps.acc, place:data.place, photo:data.photo}); store.set('tc_db',db); return {ok:true, ts} }
+  if(action==='clock'){ db.att.push({ts, type:data.type, lat:data.gps.lat, lng:data.gps.lng, acc:data.gps.acc, place:data.place, hotel:data.hotel, dist:data.dist, inArea:data.inArea, photo:data.photo}); store.set('tc_db',db); return {ok:true, ts} }
   if(action==='ot'){
     const c = calcOt(data.date,data.start,data.end,data.brk,data.type,wage);
     const outs = db.att.filter(a=>a.type==='out' && a.ts.slice(0,10)===data.date).map(a=>a.ts.slice(11,16));
@@ -282,15 +309,17 @@ function renderMe(){
 // ---------- ลงทะเบียน ----------
 $('bReg').addEventListener('click', async()=>{
   const id=$('rId').value.trim(), name=$('rName').value.trim();
+  const hotel=getHotel('rHotel');
   if(!id||!name) return toast('กรอกรหัสและชื่อให้ครบ');
+  if(!hotel) return toast('เลือกโรงแรมที่สังกัด');
   $('bReg').disabled=true;
   try{
     const cred = await registerFinger(id,name);
-    const r = await api('register',{empId:id, name, credId:cred, device:navigator.userAgent});
-    me = {id, name, cred, since:ymd(new Date())}; store.set('tc_me',me);
+    const r = await api('register',{empId:id, name, hotel:hotelOf(hotel).name, credId:cred, device:navigator.userAgent});
+    me = {id, name, hotel, cred, since:ymd(new Date())}; store.set('tc_me',me);
     if(r.profile){wage={...wage,...r.profile}; store.set('tc_wage',wage)}
     renderMe(); show('vClock'); toast('ลงทะเบียนสำเร็จ');
-  }catch(e){toast(e.name==='NotAllowedError'?'ยกเลิกการสแกน':e.message)}
+  }catch(e){toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกการสแกน':e.message)}
   $('bReg').disabled=false;
 });
 
@@ -300,27 +329,34 @@ function setSt(i,t,c){const e=$('s'+i);e.textContent=t;e.className='st '+c}
 async function startClock(type){
   pend = {type, gps:null, ok:false, photo:null};
   $('mTitle').textContent = type==='in'?'สแกนเข้างาน':'สแกนออกงาน';
-  [1,2,3].forEach(i=>setSt(i,'รอ','wait')); $('mPhoto').value=''; $('mPrev').style.display='none'; $('mPlace').value=store.get('tc_place','');
+  [1,2,3].forEach(i=>setSt(i,'รอ','wait')); $('mPhoto').value=''; $('mPrev').style.display='none'; $('mPlace').value=store.get('tc_place',''); $('mDist').textContent='';
+  pickHotel('mHotel', store.get('tc_hotel', me.hotel||'baiyoke'));
   $('mGo').disabled=true; $('mod').classList.add('on');
   try{ setSt(1,'กำลังสแกน…','wait'); await verifyFinger(); pend.ok=true; setSt(1,'ผ่าน','ok') }
-  catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
-  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(); setSt(2,`±${pend.gps.acc} ม.`,'ok') }
+  catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
+  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(); setSt(2,`±${pend.gps.acc} ม.`,'ok'); showDist() }
   catch(e){ setSt(2,'ไม่ได้','bad'); toast(e.message); return }
   setSt(3,'แตะช่องด้านล่าง','wait'); ready();
 }
+function showDist(){
+  if(!pend||!pend.gps) return; const h=hotelOf(getHotel('mHotel')), d=distM(pend.gps,h), ok=d<=RADIUS;
+  $('mDist').className='dist '+(ok?'ok':'bad'); $('mDist').textContent = `ห่างจาก${h.th} ${d.toLocaleString()} ม. · ${ok?'อยู่ในพื้นที่':'นอกพื้นที่ (จะบันทึกไว้ให้ HR ตรวจ)'}`;
+}
+document.querySelector('[data-name=mHotel]').addEventListener('change',showDist);
 function ready(){$('mGo').disabled = !(pend && pend.ok && pend.gps && pend.photo)}
 $('mPhoto').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f||!pend) return;
   const d=new Date(), g=pend.gps||{};
-  pend.photo = await stampPhoto(f,[`${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`]);
+  pend.photo = await stampPhoto(f,[hotelOf(getHotel('mHotel')).name, `${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`]);
   $('mPrev').src=pend.photo; $('mPrev').style.display='block'; setSt(3,'พร้อม','ok'); ready();
 });
 $('mCancel').addEventListener('click',()=>{$('mod').classList.remove('on'); pend=null});
 $('mGo').addEventListener('click', async()=>{
   $('mGo').disabled=true; $('mGo').textContent='กำลังบันทึก…';
   try{
-    const place=$('mPlace').value.trim(); store.set('tc_place',place);
-    const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
+    const place=$('mPlace').value.trim(), h=hotelOf(getHotel('mHotel')), dist=distM(pend.gps,h);
+    store.set('tc_place',place); store.set('tc_hotel',h.id);
+    const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, hotel:h.name, dist, inArea:dist<=RADIUS, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
     $('mod').classList.remove('on'); toast(`บันทึก${pend.type==='in'?'เข้า':'ออก'}งานแล้ว ${(r.ts||'').slice(11,16)}`); pend=null; loadToday();
   }catch(e){toast(e.message)}
   $('mGo').textContent='บันทึก'; ready();
@@ -339,7 +375,7 @@ function refreshCalc(){
 ['oDate','oStart','oEnd','oBreak','oType'].forEach(i=>$(i).addEventListener('input',refreshCalc));
 $('oPhoto').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return; const d=new Date();
-  otPhoto = await stampPhoto(f,[`${me.name} · หลักฐาน OT`, `${ymd(d)} ${hm(d)}`]);
+  otPhoto = await stampPhoto(f,[hotelOf(getHotel('oHotel')).name, `${me.name} · หลักฐาน OT`, `${ymd(d)} ${hm(d)}`]);
   $('oPrev').src=otPhoto; $('oPrev').style.display='block';
 });
 $('bFill').addEventListener('click', async()=>{
@@ -349,7 +385,7 @@ $('bFill').addEventListener('click', async()=>{
   $('oDate').value=today; $('oStart').value=wage.end||'17:00'; $('oEnd').value=out.ts.slice(11,16); refreshCalc();
 });
 $('bOt').addEventListener('click', async()=>{
-  const d={date:$('oDate').value,start:$('oStart').value,end:$('oEnd').value,brk:+$('oBreak').value||0,type:$('oType').value,reason:$('oReason').value.trim()};
+  const d={hotel:hotelOf(getHotel('oHotel')).name, date:$('oDate').value,start:$('oStart').value,end:$('oEnd').value,brk:+$('oBreak').value||0,type:$('oType').value,reason:$('oReason').value.trim()};
   if(!d.date||!d.start||!d.end) return toast('กรอกวันที่และเวลาให้ครบ');
   if(!d.reason) return toast('ระบุงานหรือเหตุผล');
   $('bOt').disabled=true;
@@ -359,7 +395,7 @@ $('bOt').addEventListener('click', async()=>{
     const r = await api('ot',{empId:me.id, credId:me.cred, ...d, photo:otPhoto, gps});
     toast(`ส่ง OT แล้ว ${r.hours} ชม. ฿${baht(r.amount)} · ${r.check}`,4500);
     $('oReason').value=''; $('oPhoto').value=''; $('oPrev').style.display='none'; otPhoto=null;
-  }catch(e){toast(e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message)}
+  }catch(e){toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message)}
   $('bOt').disabled=false;
 });
 
@@ -368,7 +404,7 @@ let cache={att:[],ot:[]};
 async function loadToday(){
   try{ cache = await api('list',{empId:me.id, credId:me.cred}) }catch(e){ return }
   const t=ymd(new Date()), rows=cache.att.filter(a=>a.ts.slice(0,10)===t);
-  $('today').innerHTML = rows.length ? rows.map(a=>`<div>${a.type==='in'?'เข้า':'ออก'} <b>${a.ts.slice(11,16)}</b> · ${esc(a.place||'-')}</div>`).join('') : 'ยังไม่มีการลงเวลา';
+  $('today').innerHTML = rows.length ? rows.map(a=>`<div>${a.type==='in'?'เข้า':'ออก'} <b>${a.ts.slice(11,16)}</b> · ${esc(a.hotel||'')}${a.place?' · '+esc(a.place):''}</div>`).join('') : 'ยังไม่มีการลงเวลา';
 }
 async function loadHist(){
   try{ cache = await api('list',{empId:me.id, credId:me.cred}) }catch(e){ $('hList').innerHTML=`<p class="note">${esc(e.message)}</p>`; return }
@@ -376,17 +412,17 @@ async function loadHist(){
   $('sDays').textContent = new Set(att.filter(a=>a.type==='in').map(a=>a.ts.slice(0,10))).size;
   $('sHrs').textContent = Math.round(ot.reduce((s,o)=>s+(+o.hours||0),0)*100)/100;
   $('sAmt').textContent = baht(ot.reduce((s,o)=>s+(+o.amount||0),0));
-  const items = [...att.map(a=>({k:a.ts, h:`<div class="rec">${a.photo&&a.photo.startsWith('data:')?`<img src="${a.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${a.ts.slice(0,16)}</b><small>${esc(a.place||'-')} · <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" rel="noopener">แผนที่</a> ±${a.acc} ม.</small></div><span class="tag ${a.type}">${a.type==='in'?'เข้า':'ออก'}</span></div>`})),
-    ...ot.map(o=>({k:o.date+' '+o.end, h:`<div class="rec">${o.photo&&o.photo.startsWith('data:')?`<img src="${o.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${o.date} ${o.start}–${o.end}</b><small>${o.hours} ชม. × ${o.rate} เท่า = ฿${baht(o.amount)} · ${esc(o.check||'')} · ${esc(o.status||'')}</small></div><span class="tag ot">OT</span></div>`}))]
+  const items = [...att.map(a=>({k:a.ts, h:`<div class="rec">${a.photo&&a.photo.startsWith('data:')?`<img src="${a.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${a.ts.slice(0,16)}</b><small>${esc(a.hotel||'')}${a.place?' · '+esc(a.place):''}${a.dist!=null&&a.dist!==''?` · ${a.inArea===false||a.inArea==='นอกพื้นที่'?'<span style="color:var(--bad)">นอกพื้นที่</span>':'ในพื้นที่'}`:''} · <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" rel="noopener">แผนที่</a> ±${a.acc} ม.</small></div><span class="tag ${a.type}">${a.type==='in'?'เข้า':'ออก'}</span></div>`})),
+    ...ot.map(o=>({k:o.date+' '+o.end, h:`<div class="rec">${o.photo&&o.photo.startsWith('data:')?`<img src="${o.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${o.date} ${o.start}–${o.end}</b><small>${esc(o.hotel||'')} · ${o.hours} ชม. × ${o.rate} เท่า = ฿${baht(o.amount)} · ${esc(o.check||'')} · ${esc(o.status||'')}</small></div><span class="tag ot">OT</span></div>`}))]
     .sort((a,b)=>b.k.localeCompare(a.k));
   $('hList').innerHTML = items.length ? items.map(i=>i.h).join('') : '<p class="note">ไม่มีข้อมูลเดือนนี้</p>';
 }
 $('hMonth').addEventListener('change',loadHist);
 $('bCsv').addEventListener('click',()=>{
   const m=$('hMonth').value, q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const lines=[['ประเภท','วันเวลา','สถานที่','lat','lng','ความแม่นยำ(ม.)','OT เริ่ม','OT สิ้นสุด','ชม.','อัตรา','บาท','ตรวจสอบ','สถานะ'].map(q).join(',')];
-  cache.att.filter(a=>a.ts.startsWith(m)).forEach(a=>lines.push([a.type==='in'?'เข้า':'ออก',a.ts,a.place,a.lat,a.lng,a.acc,'','','','','','',''].map(q).join(',')));
-  cache.ot.filter(o=>(o.date||'').startsWith(m)).forEach(o=>lines.push(['OT',o.date,o.reason,'','','',o.start,o.end,o.hours,o.rate,o.amount,o.check,o.status].map(q).join(',')));
+  const lines=[['ประเภท','วันเวลา','โรงแรม','หมายเหตุ','lat','lng','ความแม่นยำ(ม.)','OT เริ่ม','OT สิ้นสุด','ชม.','อัตรา','บาท','ตรวจสอบ','สถานะ'].map(q).join(',')];
+  cache.att.filter(a=>a.ts.startsWith(m)).forEach(a=>lines.push([a.type==='in'?'เข้า':'ออก',a.ts,a.hotel,a.place,a.lat,a.lng,a.acc,'','','','','','',''].map(q).join(',')));
+  cache.ot.filter(o=>(o.date||'').startsWith(m)).forEach(o=>lines.push(['OT',o.date,o.hotel,o.reason,'','','',o.start,o.end,o.hours,o.rate,o.amount,o.check,o.status].map(q).join(',')));
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv'})); a.download=`timesheet-${me.id}-${m}.csv`; a.click();
 });
 
@@ -397,6 +433,7 @@ $('bReset').addEventListener('click',()=>{ if($('bReset').dataset.c){ localStora
 // ---------- เริ่ม ----------
 const now=new Date(); $('oDate').value=ymd(now); $('oStart').value=wage.end||'17:00'; $('hMonth').value=ymd(now).slice(0,7);
 if(!window.isSecureContext) toast('ต้องเปิดผ่าน https เท่านั้น จึงจะใช้สแกนนิ้วและ GPS ได้',6000);
+pickHotel('rHotel','baiyoke'); pickHotel('oHotel', store.get('tc_hotel', me?.hotel||'baiyoke'));
 renderMe(); show('vClock'); refreshCalc();
 if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage);renderMe();refreshCalc()}}).catch(()=>{}) }
 }
