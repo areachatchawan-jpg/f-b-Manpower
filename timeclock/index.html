@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ลงเวลานอกสถานที่</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: เครื่องมือทำงาน เงียบ ชัด เชื่อถือได้
+   IDEA: เครื่องตอกบัตรพกพา นาฬิกาใหญ่ ปุ่มเข้า/ออกใหญ่
+   PICTURE: นาฬิกาสดตัวใหญ่ + ปุ่มสแกนนิ้ว
+   COLOUR and TYPE: ขาว/ดำ น้ำเงินสัญญาณ ส้มสำหรับออก, IBM Plex Sans Thai
+   LAYOUT: คอลัมน์เดียวแบบแอปมือถือ แท็บล่าง */
+:root{color-scheme:light dark;--bg:light-dark(#f5f5f2,#121314);--card:light-dark(#fff,#1c1d1f);--ink:light-dark(#141414,#efefec);--mute:light-dark(#66675f,#a2a39c);--line:light-dark(#e2e2dc,#2e3033);--in:#1f5eff;--out:#e8590c;--ok:#1a7f4b;--bad:#c92a2a}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans Thai",system-ui,sans-serif;overflow-x:clip;padding-bottom:84px}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}h2{font-size:18px;margin:0 0 12px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0 4px}
+.who{font-size:14px;color:var(--mute)}.mode{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--line)}
+.clock{text-align:center;padding:22px 0 10px}
+.time{font-size:clamp(52px,17vw,84px);font-weight:600;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.date{color:var(--mute);margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+.big button{height:120px;border-radius:18px;font-size:20px;font-weight:600;color:#fff;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.big svg{width:40px;height:40px}
+#bIn{background:var(--in)}#bOut{background:var(--out)}
+button,.btn{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 16px;cursor:pointer}
+button.pri{background:var(--ink);color:var(--bg);border:0;font-weight:600;width:100%}
+button:disabled{opacity:.5}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--in);outline-offset:2px}
+label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
+input,select,textarea{font:inherit;font-size:16px;width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg);color:var(--ink)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.steps{list-style:none;padding:0;margin:0}.steps li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.st{white-space:nowrap;font-weight:600}.st.ok{color:var(--ok)}.st.bad{color:var(--bad)}.st.wait{color:var(--mute)}
+.calc{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-top:1px solid var(--line);margin-top:12px}
+.calc b{font-size:32px;font-variant-numeric:tabular-nums}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.sum div{background:var(--bg);border-radius:12px;padding:10px 4px}.sum b{display:block;font-size:22px;font-variant-numeric:tabular-nums}.sum span{font-size:13px;color:var(--mute)}
+.rec{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.rec img,.rec .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--line)}
+.rec small{display:block;color:var(--mute);font-size:13px}
+.tag{font-size:13px;padding:2px 8px;border-radius:99px;color:#fff;white-space:nowrap}
+.tag.in{background:var(--in)}.tag.out{background:var(--out)}.tag.ot{background:#5f3dc4}
+a{color:var(--in)}
+nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;border-radius:0;height:64px;background:none;color:var(--mute);font-size:14px}
+nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in)}
+.view{display:none}.view.on{display:block}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;max-width:92vw;display:none;z-index:9}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:8}
+.modal.on{display:flex}.sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto}
+.prev{width:100%;border-radius:12px;margin-top:8px;display:none}
+.note{font-size:13px;color:var(--mute)}
+@media(prefers-reduced-motion:no-preference){.big button:active{transform:scale(.97)}.big button{transition:transform .1s}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div><h1>ลงเวลานอกสถานที่</h1><div class="who" id="who">ยังไม่ได้ลงทะเบียน</div></div><span class="mode" id="mode"></span></div>
+
+  <!-- ลงทะเบียน -->
+  <section class="view" id="vReg">
+    <div class="card">
+      <h2>ลงทะเบียนลายนิ้วมือ</h2>
+      <p class="note">ทำครั้งเดียวต่อเครื่อง ระบบจะผูกลายนิ้วมือ (หรือ Face ID) ของมือถือเครื่องนี้กับรหัสพนักงานของคุณ</p>
+      <label for="rId">รหัสพนักงาน</label><input id="rId" autocomplete="off">
+      <label for="rName">ชื่อ-นามสกุล</label><input id="rName">
+      <p></p><button class="pri" id="bReg">สแกนนิ้วเพื่อลงทะเบียน</button>
+    </div>
+  </section>
+
+  <!-- ลงเวลา -->
+  <section class="view" id="vClock">
+    <div class="clock"><div class="time" id="tNow">--:--</div><div class="date" id="dNow"></div></div>
+    <div class="big">
+      <button id="bIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 11v3m-4-3a4 4 0 0 1 8 0v4a4 4 0 0 1-1 2.6M5 11a7 7 0 0 1 14 0v3M8 15v1a4 4 0 0 0 2 3.5M12 2a9 9 0 0 1 9 9"/></svg>สแกนเข้างาน</button>
+      <button id="bOut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 11v3m-4-3a4 4 0 0 1 8 0v4a4 4 0 0 1-1 2.6M5 11a7 7 0 0 1 14 0v3M8 15v1a4 4 0 0 0 2 3.5M12 2a9 9 0 0 1 9 9"/></svg>สแกนออกงาน</button>
+    </div>
+    <div class="card"><h2>วันนี้</h2><div id="today" class="note">ยังไม่มีการลงเวลา</div></div>
+  </section>
+
+  <!-- OT -->
+  <section class="view" id="vOt">
+    <div class="card">
+      <h2>ขอทำงานล่วงเวลา (OT)</h2>
+      <label for="oDate">วันที่ทำ OT</label><input type="date" id="oDate">
+      <div class="row">
+        <div><label for="oStart">เริ่ม</label><input type="time" id="oStart"></div>
+        <div><label for="oEnd">สิ้นสุด</label><input type="time" id="oEnd"></div>
+      </div>
+      <div class="row">
+        <div><label for="oBreak">พัก (นาที)</label><input type="number" id="oBreak" value="0" min="0" inputmode="numeric"></div>
+        <div><label for="oType">ประเภท</label><select id="oType">
+          <option value="ot">OT วันทำงาน</option>
+          <option value="holiday">ทำงานวันหยุด</option>
+          <option value="holidayOt">OT วันหยุด</option></select></div>
+      </div>
+      <label for="oReason">งาน / เหตุผล</label><textarea id="oReason" rows="2"></textarea>
+      <label for="oPhoto">รูปหลักฐาน (ถ่ายหน้างาน)</label><input type="file" id="oPhoto" accept="image/*" capture="environment">
+      <img class="prev" id="oPrev" alt="">
+      <button class="btn" id="bFill" style="margin-top:10px;width:100%">ดึงเวลาจากการสแกนออกวันนี้</button>
+      <div class="calc"><div><div id="cHrs" class="note">0 ชม.</div><div id="cRate" class="note"></div></div><b id="cAmt">฿0</b></div>
+      <button class="pri" id="bOt">สแกนนิ้วเพื่อยืนยันส่ง OT</button>
+      <p class="note">ยอดเงินที่แสดงเป็นค่าประมาณ ระบบหลังบ้านจะคำนวณใหม่จากค่าจ้างที่ HR ตั้งไว้</p>
+    </div>
+  </section>
+
+  <!-- ประวัติ -->
+  <section class="view" id="vHist">
+    <div class="card">
+      <div class="row" style="align-items:end"><div><label for="hMonth">เดือน</label><input type="month" id="hMonth"></div><button id="bCsv">ส่งออก CSV</button></div>
+      <p></p><div class="sum"><div><b id="sDays">0</b><span>วันที่มาทำงาน</span></div><div><b id="sHrs">0</b><span>ชม. OT</span></div><div><b id="sAmt">0</b><span>บาท OT</span></div></div>
+    </div>
+    <div class="card" id="hList"><p class="note">กำลังโหลด…</p></div>
+  </section>
+
+  <!-- ตั้งค่า -->
+  <section class="view" id="vSet">
+    <div class="card">
+      <h2>ค่าจ้างและเวลางาน</h2>
+      <p class="note" id="setNote">ใช้คำนวณ OT ในโหมดทดลอง ถ้าเชื่อมต่อ Google Sheets แล้ว ค่าเหล่านี้จะมาจากชีต Employees ที่ HR ตั้งไว้</p>
+      <div class="row">
+        <div><label for="wType">ประเภทค่าจ้าง</label><select id="wType"><option value="monthly">รายเดือน</option><option value="daily">รายวัน</option></select></div>
+        <div><label for="wAmt">ค่าจ้าง (บาท)</label><input type="number" id="wAmt" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div><label for="wStart">เข้างาน</label><input type="time" id="wStart" value="08:00"></div>
+        <div><label for="wEnd">เลิกงาน</label><input type="time" id="wEnd" value="17:00"></div>
+      </div>
+      <p></p><button class="pri" id="bSave">บันทึก</button>
+    </div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-v="vClock" class="on">ลงเวลา</button><button data-v="vOt">ขอ OT</button><button data-v="vHist">ประวัติ</button><button data-v="vSet">ตั้งค่า</button>
+</nav>
+
+<div class="modal" id="mod"><div class="sheet">
+  <h2 id="mTitle">สแกนเข้างาน</h2>
+  <ul class="steps">
+    <li><span>1. ยืนยันลายนิ้วมือ</span><span class="st wait" id="s1">รอ</span></li>
+    <li><span>2. ตำแหน่ง GPS</span><span class="st wait" id="s2">รอ</span></li>
+    <li><span>3. ถ่ายรูปหลักฐาน</span><span class="st wait" id="s3">รอ</span></li>
+  </ul>
+  <label for="mPhoto">ถ่ายเซลฟี่หน้างาน</label><input type="file" id="mPhoto" accept="image/*" capture="user">
+  <img class="prev" id="mPrev" alt="">
+  <label for="mPlace">สถานที่ / ลูกค้า / หมายเหตุ</label><input id="mPlace">
+  <p></p><div class="row"><button id="mCancel">ยกเลิก</button><button class="pri" id="mGo" disabled>บันทึก</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+{
+// ===== ตั้งค่า: วาง URL ของ Google Apps Script Web App ที่นี่ (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง) =====
+const SCRIPT_URL = '';
+// อัตรา OT ตาม พ.ร.บ.คุ้มครองแรงงาน (แก้ได้)
+const RATES = {ot:1.5, holidayOt:3, holiday:{monthly:1, daily:2}};
+
+const $ = id => document.getElementById(id);
+const store = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const hm = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const baht = n => (Math.round(n*100)/100).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me = store.get('tc_me', null);
+let wage = store.get('tc_wage', {type:'monthly', amount:15000, start:'08:00', end:'17:00'});
+
+function toast(t, ms=3000){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',ms)}
+$('mode').textContent = SCRIPT_URL ? 'เชื่อมต่อ Google Sheets' : 'โหมดทดลอง';
+
+// ---------- base64url ----------
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const fromB64u = s => Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((s.length+3)%4)),c=>c.charCodeAt(0));
+const rand = n => crypto.getRandomValues(new Uint8Array(n));
+
+// ---------- ลายนิ้วมือ (WebAuthn, platform authenticator) ----------
+async function registerFinger(id, name){
+  if(!window.PublicKeyCredential) throw new Error('เบราว์เซอร์นี้ไม่รองรับการสแกนนิ้ว');
+  const ok = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  if(!ok) throw new Error('เครื่องนี้ยังไม่ได้ตั้งค่าลายนิ้วมือหรือ Face ID');
+  const c = await navigator.credentials.create({publicKey:{
+    challenge:rand(32), rp:{name:'ลงเวลานอกสถานที่'},
+    user:{id:new TextEncoder().encode(id), name:id, displayName:name},
+    pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+    authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred'},
+    timeout:60000, attestation:'none'}});
+  return b64u(c.rawId);
+}
+async function verifyFinger(){
+  const a = await navigator.credentials.get({publicKey:{challenge:rand(32), timeout:60000, userVerification:'required',
+    allowCredentials:[{type:'public-key', id:fromB64u(me.cred)}]}});
+  const flags = new Uint8Array(a.response.authenticatorData)[32];
+  if(!(flags & 4)) throw new Error('ยืนยันลายนิ้วมือไม่สำเร็จ');
+  return {credId:b64u(a.rawId), uv:true};
+}
+
+// ---------- GPS ----------
+const getGps = () => new Promise((res,rej)=>{
+  if(!navigator.geolocation) return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));
+  navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), acc:Math.round(p.coords.accuracy)}),
+    e=>rej(new Error(e.code===1?'กรุณาอนุญาตการเข้าถึงตำแหน่ง':'หาตำแหน่งไม่ได้ ลองใหม่ในที่โล่ง')), {enableHighAccuracy:true, timeout:20000, maximumAge:0});
+});
+
+// ---------- รูป: ย่อขนาด + ประทับเวลา/พิกัดลงบนรูป ----------
+function stampPhoto(file, lines){
+  return new Promise((res,rej)=>{
+    const img = new Image(); img.onerror=()=>rej(new Error('อ่านรูปไม่ได้'));
+    img.onload = ()=>{
+      const k = Math.min(1, 900/Math.max(img.width,img.height));
+      const cv = document.createElement('canvas'); cv.width=Math.round(img.width*k); cv.height=Math.round(img.height*k);
+      const g = cv.getContext('2d'); g.drawImage(img,0,0,cv.width,cv.height);
+      const fs = Math.max(14, Math.round(cv.width/32)), h = fs*1.4*lines.length+fs;
+      g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(0,cv.height-h,cv.width,h);
+      g.fillStyle='#fff'; g.font=`600 ${fs}px "IBM Plex Sans Thai",sans-serif`;
+      lines.forEach((t,i)=>g.fillText(t, fs*.6, cv.height-h+fs*1.4*(i+1)));
+      URL.revokeObjectURL(img.src); res(cv.toDataURL('image/jpeg',.72));
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ---------- คำนวณ OT ----------
+function calcOt(date, start, end, brk, type, w){
+  if(!start||!end) return {hours:0, rate:0, hourly:0, amount:0};
+  const [sh,sm]=start.split(':').map(Number), [eh,em]=end.split(':').map(Number);
+  let mins = (eh*60+em)-(sh*60+sm); if(mins<=0) mins += 1440; // ข้ามเที่ยงคืน
+  mins = Math.max(0, mins-(+brk||0));
+  const hours = Math.round(mins/60*100)/100;
+  const hourly = w.type==='monthly' ? (+w.amount||0)/30/8 : (+w.amount||0)/8;
+  const rate = type==='holiday' ? RATES.holiday[w.type] : RATES[type];
+  return {hours, rate, hourly, amount: Math.round(hours*hourly*rate*100)/100};
+}
+
+// ---------- ข้อมูล: Google Sheets หรือ localStorage ----------
+async function api(action, data){
+  if(SCRIPT_URL){
+    const r = await fetch(SCRIPT_URL,{method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, ...data})});
+    const j = await r.json(); if(!j.ok) throw new Error(j.error||'บันทึกไม่สำเร็จ'); return j;
+  }
+  const db = store.get('tc_db',{att:[],ot:[]}), now = new Date(), ts = ymd(now)+' '+hm(now)+':'+pad(now.getSeconds());
+  if(action==='register') return {ok:true, profile:wage};
+  if(action==='clock'){ db.att.push({ts, type:data.type, lat:data.gps.lat, lng:data.gps.lng, acc:data.gps.acc, place:data.place, photo:data.photo}); store.set('tc_db',db); return {ok:true, ts} }
+  if(action==='ot'){
+    const c = calcOt(data.date,data.start,data.end,data.brk,data.type,wage);
+    const outs = db.att.filter(a=>a.type==='out' && a.ts.slice(0,10)===data.date).map(a=>a.ts.slice(11,16));
+    const check = outs.length && outs.some(t=>t>=data.end) ? 'ตรงกับเวลาสแกนออก' : 'ไม่พบสแกนออกที่ครอบคลุม';
+    db.ot.push({ts, ...data, ...c, check, status:'รออนุมัติ'}); store.set('tc_db',db); return {ok:true, ...c, check};
+  }
+  if(action==='list') return {ok:true, att:db.att, ot:db.ot};
+  if(action==='profile') return {ok:true, profile:wage};
+}
+
+// ---------- นาฬิกา ----------
+const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+function tick(){const d=new Date();$('tNow').textContent=hm(d);$('dNow').textContent=`วัน${days[d.getDay()]}ที่ ${d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}`}
+tick(); setInterval(tick,1000);
+
+// ---------- นำทาง ----------
+function show(v){
+  if(!me) v='vReg';
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id===v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('nav').style.display = me ? '' : 'none';
+  if(v==='vHist') loadHist();
+}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) show(b.dataset.v)});
+function renderMe(){
+  $('who').textContent = me ? `${me.name} · ${me.id}` : 'ยังไม่ได้ลงทะเบียน';
+  $('devInfo').textContent = me ? `ผูกกับ ${me.name} (${me.id}) ตั้งแต่ ${me.since}` : '';
+  $('wType').value=wage.type; $('wAmt').value=wage.amount; $('wStart').value=wage.start||'08:00'; $('wEnd').value=wage.end||'17:00';
+  if(SCRIPT_URL){['wType','wAmt','wStart','wEnd','bSave'].forEach(i=>$(i).disabled=true)}
+}
+
+// ---------- ลงทะเบียน ----------
+$('bReg').addEventListener('click', async()=>{
+  const id=$('rId').value.trim(), name=$('rName').value.trim();
+  if(!id||!name) return toast('กรอกรหัสและชื่อให้ครบ');
+  $('bReg').disabled=true;
+  try{
+    const cred = await registerFinger(id,name);
+    const r = await api('register',{empId:id, name, credId:cred, device:navigator.userAgent});
+    me = {id, name, cred, since:ymd(new Date())}; store.set('tc_me',me);
+    if(r.profile){wage={...wage,...r.profile}; store.set('tc_wage',wage)}
+    renderMe(); show('vClock'); toast('ลงทะเบียนสำเร็จ');
+  }catch(e){toast(e.name==='NotAllowedError'?'ยกเลิกการสแกน':e.message)}
+  $('bReg').disabled=false;
+});
+
+// ---------- สแกนเข้า/ออก ----------
+let pend = null;
+function setSt(i,t,c){const e=$('s'+i);e.textContent=t;e.className='st '+c}
+async function startClock(type){
+  pend = {type, gps:null, ok:false, photo:null};
+  $('mTitle').textContent = type==='in'?'สแกนเข้างาน':'สแกนออกงาน';
+  [1,2,3].forEach(i=>setSt(i,'รอ','wait')); $('mPhoto').value=''; $('mPrev').style.display='none'; $('mPlace').value=store.get('tc_place','');
+  $('mGo').disabled=true; $('mod').classList.add('on');
+  try{ setSt(1,'กำลังสแกน…','wait'); await verifyFinger(); pend.ok=true; setSt(1,'ผ่าน','ok') }
+  catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
+  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(); setSt(2,`±${pend.gps.acc} ม.`,'ok') }
+  catch(e){ setSt(2,'ไม่ได้','bad'); toast(e.message); return }
+  setSt(3,'แตะช่องด้านล่าง','wait'); ready();
+}
+function ready(){$('mGo').disabled = !(pend && pend.ok && pend.gps && pend.photo)}
+$('mPhoto').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f||!pend) return;
+  const d=new Date(), g=pend.gps||{};
+  pend.photo = await stampPhoto(f,[`${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`]);
+  $('mPrev').src=pend.photo; $('mPrev').style.display='block'; setSt(3,'พร้อม','ok'); ready();
+});
+$('mCancel').addEventListener('click',()=>{$('mod').classList.remove('on'); pend=null});
+$('mGo').addEventListener('click', async()=>{
+  $('mGo').disabled=true; $('mGo').textContent='กำลังบันทึก…';
+  try{
+    const place=$('mPlace').value.trim(); store.set('tc_place',place);
+    const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
+    $('mod').classList.remove('on'); toast(`บันทึก${pend.type==='in'?'เข้า':'ออก'}งานแล้ว ${(r.ts||'').slice(11,16)}`); pend=null; loadToday();
+  }catch(e){toast(e.message)}
+  $('mGo').textContent='บันทึก'; ready();
+});
+$('bIn').addEventListener('click',()=>startClock('in'));
+$('bOut').addEventListener('click',()=>startClock('out'));
+
+// ---------- OT ----------
+let otPhoto=null;
+function refreshCalc(){
+  const c = calcOt($('oDate').value,$('oStart').value,$('oEnd').value,$('oBreak').value,$('oType').value,wage);
+  $('cHrs').textContent = `${c.hours} ชม. × ${baht(c.hourly)} บ./ชม.`;
+  $('cRate').textContent = c.rate?`อัตรา ${c.rate} เท่า`:'';
+  $('cAmt').textContent = '฿'+baht(c.amount);
+}
+['oDate','oStart','oEnd','oBreak','oType'].forEach(i=>$(i).addEventListener('input',refreshCalc));
+$('oPhoto').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return; const d=new Date();
+  otPhoto = await stampPhoto(f,[`${me.name} · หลักฐาน OT`, `${ymd(d)} ${hm(d)}`]);
+  $('oPrev').src=otPhoto; $('oPrev').style.display='block';
+});
+$('bFill').addEventListener('click', async()=>{
+  const {att} = await api('list',{empId:me.id, credId:me.cred}).catch(()=>({att:[]}));
+  const today = ymd(new Date()), out = att.filter(a=>a.type==='out'&&a.ts.slice(0,10)===today).pop();
+  if(!out) return toast('ยังไม่มีการสแกนออกวันนี้');
+  $('oDate').value=today; $('oStart').value=wage.end||'17:00'; $('oEnd').value=out.ts.slice(11,16); refreshCalc();
+});
+$('bOt').addEventListener('click', async()=>{
+  const d={date:$('oDate').value,start:$('oStart').value,end:$('oEnd').value,brk:+$('oBreak').value||0,type:$('oType').value,reason:$('oReason').value.trim()};
+  if(!d.date||!d.start||!d.end) return toast('กรอกวันที่และเวลาให้ครบ');
+  if(!d.reason) return toast('ระบุงานหรือเหตุผล');
+  $('bOt').disabled=true;
+  try{
+    await verifyFinger();
+    const gps = await getGps().catch(()=>null);
+    const r = await api('ot',{empId:me.id, credId:me.cred, ...d, photo:otPhoto, gps});
+    toast(`ส่ง OT แล้ว ${r.hours} ชม. ฿${baht(r.amount)} · ${r.check}`,4500);
+    $('oReason').value=''; $('oPhoto').value=''; $('oPrev').style.display='none'; otPhoto=null;
+  }catch(e){toast(e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message)}
+  $('bOt').disabled=false;
+});
+
+// ---------- วันนี้ & ประวัติ ----------
+let cache={att:[],ot:[]};
+async function loadToday(){
+  try{ cache = await api('list',{empId:me.id, credId:me.cred}) }catch(e){ return }
+  const t=ymd(new Date()), rows=cache.att.filter(a=>a.ts.slice(0,10)===t);
+  $('today').innerHTML = rows.length ? rows.map(a=>`<div>${a.type==='in'?'เข้า':'ออก'} <b>${a.ts.slice(11,16)}</b> · ${esc(a.place||'-')}</div>`).join('') : 'ยังไม่มีการลงเวลา';
+}
+async function loadHist(){
+  try{ cache = await api('list',{empId:me.id, credId:me.cred}) }catch(e){ $('hList').innerHTML=`<p class="note">${esc(e.message)}</p>`; return }
+  const m=$('hMonth').value, att=cache.att.filter(a=>a.ts.startsWith(m)), ot=cache.ot.filter(o=>(o.date||'').startsWith(m));
+  $('sDays').textContent = new Set(att.filter(a=>a.type==='in').map(a=>a.ts.slice(0,10))).size;
+  $('sHrs').textContent = Math.round(ot.reduce((s,o)=>s+(+o.hours||0),0)*100)/100;
+  $('sAmt').textContent = baht(ot.reduce((s,o)=>s+(+o.amount||0),0));
+  const items = [...att.map(a=>({k:a.ts, h:`<div class="rec">${a.photo&&a.photo.startsWith('data:')?`<img src="${a.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${a.ts.slice(0,16)}</b><small>${esc(a.place||'-')} · <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" rel="noopener">แผนที่</a> ±${a.acc} ม.</small></div><span class="tag ${a.type}">${a.type==='in'?'เข้า':'ออก'}</span></div>`})),
+    ...ot.map(o=>({k:o.date+' '+o.end, h:`<div class="rec">${o.photo&&o.photo.startsWith('data:')?`<img src="${o.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${o.date} ${o.start}–${o.end}</b><small>${o.hours} ชม. × ${o.rate} เท่า = ฿${baht(o.amount)} · ${esc(o.check||'')} · ${esc(o.status||'')}</small></div><span class="tag ot">OT</span></div>`}))]
+    .sort((a,b)=>b.k.localeCompare(a.k));
+  $('hList').innerHTML = items.length ? items.map(i=>i.h).join('') : '<p class="note">ไม่มีข้อมูลเดือนนี้</p>';
+}
+$('hMonth').addEventListener('change',loadHist);
+$('bCsv').addEventListener('click',()=>{
+  const m=$('hMonth').value, q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[['ประเภท','วันเวลา','สถานที่','lat','lng','ความแม่นยำ(ม.)','OT เริ่ม','OT สิ้นสุด','ชม.','อัตรา','บาท','ตรวจสอบ','สถานะ'].map(q).join(',')];
+  cache.att.filter(a=>a.ts.startsWith(m)).forEach(a=>lines.push([a.type==='in'?'เข้า':'ออก',a.ts,a.place,a.lat,a.lng,a.acc,'','','','','','',''].map(q).join(',')));
+  cache.ot.filter(o=>(o.date||'').startsWith(m)).forEach(o=>lines.push(['OT',o.date,o.reason,'','','',o.start,o.end,o.hours,o.rate,o.amount,o.check,o.status].map(q).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv'})); a.download=`timesheet-${me.id}-${m}.csv`; a.click();
+});
+
+// ---------- ตั้งค่า ----------
+$('bSave').addEventListener('click',()=>{wage={type:$('wType').value,amount:+$('wAmt').value||0,start:$('wStart').value,end:$('wEnd').value};store.set('tc_wage',wage);refreshCalc();toast('บันทึกแล้ว')});
+$('bReset').addEventListener('click',()=>{ if($('bReset').dataset.c){ localStorage.removeItem('tc_me'); me=null; renderMe(); show('vReg'); $('bReset').textContent='ยกเลิกการลงทะเบียนในเครื่องนี้'; delete $('bReset').dataset.c } else { $('bReset').dataset.c=1; $('bReset').textContent='แตะอีกครั้งเพื่อยืนยัน' } });
+
+// ---------- เริ่ม ----------
+const now=new Date(); $('oDate').value=ymd(now); $('oStart').value=wage.end||'17:00'; $('hMonth').value=ymd(now).slice(0,7);
+if(!window.isSecureContext) toast('ต้องเปิดผ่าน https เท่านั้น จึงจะใช้สแกนนิ้วและ GPS ได้',6000);
+renderMe(); show('vClock'); refreshCalc();
+if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage);renderMe();refreshCalc()}}).catch(()=>{}) }
+}
+</script>
+</body>
+</html>
