@@ -146,6 +146,14 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--in
       </div>
       <p></p><button class="pri" id="bSave">บันทึก</button>
     </div>
+    <div class="card">
+      <h2>วัดพิกัดจุดสแกน (สำหรับ HR)</h2>
+      <p class="note">ไปยืนตรงจุดที่ให้พนักงานสแกน เช่น ทางเข้าพนักงาน แล้วกดวัด ระบบจะเก็บค่า GPS ประมาณ 30 วินาทีแล้วหาค่าเฉลี่ยจากค่าที่แม่นที่สุด</p>
+      <div class="hotels" data-name="cHotel"></div>
+      <div class="row" style="margin-top:10px"><div><label for="cRad">รัศมีที่อนุญาต (ม.)</label><input type="number" id="cRad" inputmode="numeric"></div><div><label for="cAcc">GPS แม่นยำอย่างน้อย (±ม.)</label><input type="number" id="cAcc" inputmode="numeric"></div></div>
+      <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
+      <div id="cOut" class="note" style="margin-top:10px"></div>
+    </div>
     <div class="card"><h2>อุปกรณ์นี้</h2><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 </main>
@@ -177,12 +185,12 @@ const SCRIPT_URL = '';
 // อัตรา OT ตาม พ.ร.บ.คุ้มครองแรงงาน (แก้ได้)
 const RATES = {ot:1.5, holidayOt:3, holiday:{monthly:1, daily:2}};
 
-// สถานที่ปฏิบัติงาน (ตรวจพิกัดให้ตรงกับ Google Maps ก่อนใช้งานจริง)
+// จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
+// เมื่อเชื่อม Google Sheets แล้ว ค่าจะมาจากชีต Hotels แทน (แก้ได้โดยไม่ต้องแก้โค้ด)
 const HOTELS = [
-  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754400, lng:100.540583},
-  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756500, lng:100.539500}
+  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754400, lng:100.540583, radius:150, maxAcc:60},
+  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756750, lng:100.538559, radius:150, maxAcc:60}
 ];
-const RADIUS = 800; // เมตร: ไกลกว่านี้จะถูกบันทึกว่า "นอกพื้นที่"
 const $ = id => document.getElementById(id);
 const store = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 const pad = n => String(n).padStart(2,'0');
@@ -193,6 +201,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 let me = store.get('tc_me', null);
 let wage = store.get('tc_wage', {type:'monthly', amount:15000, start:'08:00', end:'17:00'});
 
+const applyHotelPos = list => (list||[]).forEach(p=>{const h=HOTELS.find(x=>x.id===p.id); if(h) ['lat','lng','radius','maxAcc'].forEach(k=>{if(p[k]!==''&&p[k]!=null&&!isNaN(+p[k])) h[k]=+p[k]})});
 const hotelOf = id => HOTELS.find(h=>h.id===id) || HOTELS[0];
 function distM(a,b){const r=Math.PI/180,x=(b.lng-a.lng)*r*Math.cos((a.lat+b.lat)/2*r),y=(b.lat-a.lat)*r;return Math.round(Math.hypot(x,y)*6371000)}
 document.querySelectorAll('.hotels').forEach(box=>{
@@ -230,10 +239,18 @@ async function verifyFinger(){
 }
 
 // ---------- GPS ----------
-const getGps = () => new Promise((res,rej)=>{
+// เก็บค่า GPS ต่อเนื่องแล้วเลือกค่าที่แม่นที่สุด (หยุดเร็วถ้าแม่นพอ)
+const getGps = (ms=12000, good=15, onTick) => new Promise((res,rej)=>{
   if(!navigator.geolocation) return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));
-  navigator.geolocation.getCurrentPosition(p=>res({lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), acc:Math.round(p.coords.accuracy)}),
-    e=>rej(new Error(e.code===1?'กรุณาอนุญาตการเข้าถึงตำแหน่ง':'หาตำแหน่งไม่ได้ ลองใหม่ในที่โล่ง')), {enableHighAccuracy:true, timeout:20000, maximumAge:0});
+  let best=null, all=[], done=false;
+  const fin = () => { if(done) return; done=true; navigator.geolocation.clearWatch(w); clearTimeout(t);
+    best ? res({...best, samples:all}) : rej(new Error('หาตำแหน่งไม่ได้ ลองขยับไปใกล้หน้าต่างหรือทางเข้า')) };
+  const w = navigator.geolocation.watchPosition(p=>{
+    const g={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), acc:Math.round(p.coords.accuracy)};
+    all.push(g); if(!best||g.acc<best.acc) best=g; onTick&&onTick(best);
+    if((best.acc<=good && all.length>=2) || (good>0 && best.acc<=8)) fin();
+  }, e=>{ if(e.code===1){done=true;navigator.geolocation.clearWatch(w);clearTimeout(t);rej(new Error('กรุณาอนุญาตการเข้าถึงตำแหน่ง'))} }, {enableHighAccuracy:true, maximumAge:0, timeout:ms});
+  const t = setTimeout(fin, ms);
 });
 
 // ---------- รูป: ย่อขนาด + ประทับเวลา/พิกัดลงบนรูป ----------
@@ -317,7 +334,7 @@ $('bReg').addEventListener('click', async()=>{
     const cred = await registerFinger(id,name);
     const r = await api('register',{empId:id, name, hotel:hotelOf(hotel).name, credId:cred, device:navigator.userAgent});
     me = {id, name, hotel, cred, since:ymd(new Date())}; store.set('tc_me',me);
-    if(r.profile){wage={...wage,...r.profile}; store.set('tc_wage',wage)}
+    if(r.profile){wage={...wage,...r.profile}; store.set('tc_wage',wage)} if(r.hotels) applyHotelPos(r.hotels);
     renderMe(); show('vClock'); toast('ลงทะเบียนสำเร็จ');
   }catch(e){toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกการสแกน':e.message)}
   $('bReg').disabled=false;
@@ -334,20 +351,32 @@ async function startClock(type){
   $('mGo').disabled=true; $('mod').classList.add('on');
   try{ setSt(1,'กำลังสแกน…','wait'); await verifyFinger(); pend.ok=true; setSt(1,'ผ่าน','ok') }
   catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
-  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(); setSt(2,`±${pend.gps.acc} ม.`,'ok'); showDist() }
+  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(12000,15,b=>setSt(2,`±${b.acc} ม.…`,'wait'));
+    const near = HOTELS.map(h=>({h,d:distM(pend.gps,h)})).sort((a,b)=>a.d-b.d)[0];
+    pickHotel('mHotel', near.h.id); showDist() }
   catch(e){ setSt(2,'ไม่ได้','bad'); toast(e.message); return }
   setSt(3,'แตะช่องด้านล่าง','wait'); ready();
 }
 function showDist(){
-  if(!pend||!pend.gps) return; const h=hotelOf(getHotel('mHotel')), d=distM(pend.gps,h), ok=d<=RADIUS;
-  $('mDist').className='dist '+(ok?'ok':'bad'); $('mDist').textContent = `ห่างจาก${h.th} ${d.toLocaleString()} ม. · ${ok?'อยู่ในพื้นที่':'นอกพื้นที่ (จะบันทึกไว้ให้ HR ตรวจ)'}`;
+  if(!pend||!pend.gps) return; const h=hotelOf(getHotel('mHotel')), g=pend.gps, d=distM(g,h);
+  const accOk = g.acc<=h.maxAcc, inOk = d<=h.radius; pend.inArea = accOk && inOk;
+  setSt(2, `±${g.acc} ม.`, accOk?'ok':'bad');
+  $('mDist').className='dist '+(pend.inArea?'ok':'bad');
+  $('mDist').innerHTML = !inOk ? `ห่างจาก${h.th} ${d.toLocaleString()} ม. (ต้องไม่เกิน ${h.radius} ม.) ไม่สามารถสแกนได้ <button id="mRetry" type="button" style="margin-top:6px;width:100%">หาตำแหน่งใหม่</button>`
+    : !accOk ? `สัญญาณ GPS ยังไม่แม่นพอ (±${g.acc} ม. ต้องไม่เกิน ±${h.maxAcc} ม.) ขยับไปใกล้หน้าต่างหรือทางเข้าแล้วลองใหม่ <button id="mRetry" type="button" style="margin-top:6px;width:100%">หาตำแหน่งใหม่</button>`
+    : `อยู่ในพื้นที่${h.th} · ห่างจุดสแกน ${d} ม.`;
+  ready();
 }
+$('mDist').addEventListener('click', async e=>{
+  if(e.target.id!=='mRetry'||!pend) return; e.target.disabled=true; e.target.textContent='กำลังหาตำแหน่ง…';
+  try{ pend.gps = await getGps(15000,10,b=>setSt(2,`±${b.acc} ม.…`,'wait')); showDist() }catch(err){ toast(err.message); e.target.disabled=false; e.target.textContent='หาตำแหน่งใหม่' }
+});
 document.querySelector('[data-name=mHotel]').addEventListener('change',showDist);
-function ready(){$('mGo').disabled = !(pend && pend.ok && pend.gps && pend.photo)}
+function ready(){$('mGo').disabled = !(pend && pend.ok && pend.gps && pend.inArea && pend.photo)}
 $('mPhoto').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f||!pend) return;
   const d=new Date(), g=pend.gps||{};
-  pend.photo = await stampPhoto(f,[hotelOf(getHotel('mHotel')).name, `${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`]);
+  pend.photo = await stampPhoto(f,[hotelOf(getHotel('mHotel')).name+(g.lat?` · ห่าง ${distM(g,hotelOf(getHotel('mHotel')))} ม.`:''), `${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`]);
   $('mPrev').src=pend.photo; $('mPrev').style.display='block'; setSt(3,'พร้อม','ok'); ready();
 });
 $('mCancel').addEventListener('click',()=>{$('mod').classList.remove('on'); pend=null});
@@ -355,8 +384,9 @@ $('mGo').addEventListener('click', async()=>{
   $('mGo').disabled=true; $('mGo').textContent='กำลังบันทึก…';
   try{
     const place=$('mPlace').value.trim(), h=hotelOf(getHotel('mHotel')), dist=distM(pend.gps,h);
+    if(dist>h.radius||pend.gps.acc>h.maxAcc) throw new Error('อยู่นอกพื้นที่ ไม่สามารถสแกนได้');
     store.set('tc_place',place); store.set('tc_hotel',h.id);
-    const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, hotel:h.name, dist, inArea:dist<=RADIUS, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
+    const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, hotel:h.name, hotelId:h.id, dist, inArea:true, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
     $('mod').classList.remove('on'); toast(`บันทึก${pend.type==='in'?'เข้า':'ออก'}งานแล้ว ${(r.ts||'').slice(11,16)}`); pend=null; loadToday();
   }catch(e){toast(e.message)}
   $('mGo').textContent='บันทึก'; ready();
@@ -391,7 +421,7 @@ $('bOt').addEventListener('click', async()=>{
   $('bOt').disabled=true;
   try{
     await verifyFinger();
-    const gps = await getGps().catch(()=>null);
+    const gps = await getGps(6000,30).catch(()=>null);
     const r = await api('ot',{empId:me.id, credId:me.cred, ...d, photo:otPhoto, gps});
     toast(`ส่ง OT แล้ว ${r.hours} ชม. ฿${baht(r.amount)} · ${r.check}`,4500);
     $('oReason').value=''; $('oPhoto').value=''; $('oPrev').style.display='none'; otPhoto=null;
@@ -430,12 +460,39 @@ $('bCsv').addEventListener('click',()=>{
 $('bSave').addEventListener('click',()=>{wage={type:$('wType').value,amount:+$('wAmt').value||0,start:$('wStart').value,end:$('wEnd').value};store.set('tc_wage',wage);refreshCalc();toast('บันทึกแล้ว')});
 $('bReset').addEventListener('click',()=>{ if($('bReset').dataset.c){ localStorage.removeItem('tc_me'); me=null; renderMe(); show('vReg'); $('bReset').textContent='ยกเลิกการลงทะเบียนในเครื่องนี้'; delete $('bReset').dataset.c } else { $('bReset').dataset.c=1; $('bReset').textContent='แตะอีกครั้งเพื่อยืนยัน' } });
 
+// ---------- วัดพิกัด ----------
+let cal=null;
+function calForm(){const h=hotelOf(getHotel('cHotel'));$('cRad').value=h.radius;$('cAcc').value=h.maxAcc;
+  $('cOut').innerHTML=`ค่าปัจจุบัน: <b>${h.lat}, ${h.lng}</b> · รัศมี ${h.radius} ม. · <a href="https://maps.google.com/?q=${h.lat},${h.lng}" target="_blank" rel="noopener">ดูบนแผนที่</a>`}
+document.querySelector('[data-name=cHotel]').addEventListener('change',calForm);
+$('bCal').addEventListener('click', async()=>{
+  const b=$('bCal'); b.disabled=true;
+  try{
+    const g = await getGps(30000, 0, x=>b.textContent=`กำลังวัด… ดีที่สุด ±${x.acc} ม.`);
+    const top = g.samples.filter(x=>x.acc<=Math.max(g.acc*1.5, g.acc+5)), w=top.map(x=>1/(x.acc*x.acc)), W=w.reduce((a,c)=>a+c,0);
+    const lat=+(top.reduce((a,x,i)=>a+x.lat*w[i],0)/W).toFixed(6), lng=+(top.reduce((a,x,i)=>a+x.lng*w[i],0)/W).toFixed(6);
+    const h=hotelOf(getHotel('cHotel'));
+    cal={id:h.id, lat, lng, radius:+$('cRad').value||150, maxAcc:+$('cAcc').value||60};
+    $('cOut').innerHTML=`<b>${h.th}</b><br>พิกัด: <b>${lat}, ${lng}</b><br>ความแม่นยำ ±${g.acc} ม. จาก ${g.samples.length} ค่า · <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener">ตรวจบนแผนที่</a>
+      <div class="row" style="margin-top:10px"><button id="cCopy" type="button">คัดลอก</button><button id="cUse" type="button">ใช้ในเครื่องนี้</button></div>
+      <p class="note">${SCRIPT_URL?'นำตัวเลขไปใส่ในชีต Hotels (คอลัมน์ lat, lng) เพื่อให้มีผลกับพนักงานทุกคน':'ตอนนี้เป็นโหมดทดลอง กด "ใช้ในเครื่องนี้" เพื่อทดสอบ แล้วส่งตัวเลขให้ผู้ดูแลระบบใส่ถาวร'}</p>`;
+    if(g.acc>30) toast('สัญญาณยังไม่แม่น (±'+g.acc+' ม.) ลองวัดใหม่ใกล้หน้าต่างหรือประตู',5000);
+  }catch(e){toast(e.message)}
+  b.disabled=false; b.textContent='เริ่มวัดพิกัด';
+});
+$('cOut').addEventListener('click', async e=>{
+  if(!cal) return;
+  if(e.target.id==='cCopy'){ try{await navigator.clipboard.writeText(`${cal.id}: ${cal.lat}, ${cal.lng} รัศมี ${cal.radius} ม. GPS ±${cal.maxAcc} ม.`);toast('คัดลอกแล้ว')}catch{toast('คัดลอกไม่ได้ กรุณาจดตัวเลขแทน')} }
+  if(e.target.id==='cUse'){ const l=store.get('tc_hotelpos',[]).filter(x=>x.id!==cal.id); l.push(cal); store.set('tc_hotelpos',l); applyHotelPos([cal]); calForm(); toast('ใช้พิกัดใหม่ในเครื่องนี้แล้ว') }
+});
+
 // ---------- เริ่ม ----------
+applyHotelPos(store.get('tc_hotelpos',[]));
 const now=new Date(); $('oDate').value=ymd(now); $('oStart').value=wage.end||'17:00'; $('hMonth').value=ymd(now).slice(0,7);
 if(!window.isSecureContext) toast('ต้องเปิดผ่าน https เท่านั้น จึงจะใช้สแกนนิ้วและ GPS ได้',6000);
-pickHotel('rHotel','baiyoke'); pickHotel('oHotel', store.get('tc_hotel', me?.hotel||'baiyoke'));
+pickHotel('rHotel','baiyoke'); pickHotel('cHotel','baiyoke'); calForm(); pickHotel('oHotel', store.get('tc_hotel', me?.hotel||'baiyoke'));
 renderMe(); show('vClock'); refreshCalc();
-if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage);renderMe();refreshCalc()}}).catch(()=>{}) }
+if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage);renderMe();refreshCalc()} if(r.hotels){applyHotelPos(r.hotels);calForm()}}).catch(()=>{}) }
 }
 </script>
 </body>

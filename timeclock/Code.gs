@@ -8,6 +8,12 @@ const PHOTO_FOLDER = 'หลักฐานลงเวลา';
 const RATES = { ot: 1.5, holidayOt: 3, holiday: { monthly: 1, daily: 2 } }; // ตาม พ.ร.บ.คุ้มครองแรงงาน
 const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' };
 
+// พิกัดเริ่มต้นของจุดสแกน (ชีต Hotels จะถูกสร้างจากค่านี้ แล้ว HR แก้ในชีตได้เลย)
+const H_HOTEL = ['id', 'ชื่อโรงแรม', 'lat', 'lng', 'รัศมี (ม.)', 'GPS แม่นยำอย่างน้อย (±ม.)'];
+const DEFAULT_HOTELS = [
+  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754400, 100.540583, 150, 60],
+  ['queensland', 'Queensland Hotel Bangkok', 13.756750, 100.538559, 150, 60]
+];
 const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
 const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
 const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'ค่าจ้าง/ชม.', 'จำนวนเงิน', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
@@ -43,6 +49,16 @@ function sheet(name, headers) {
 const now = () => Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
 const txt = v => v instanceof Date ? Utilities.formatDate(v, TZ, v.getFullYear() < 1900 ? 'HH:mm' : 'yyyy-MM-dd HH:mm:ss') : String(v == null ? '' : v);
 
+function hotels() {
+  const s = sheet('Hotels', H_HOTEL);
+  if (s.getLastRow() < 2) s.getRange(2, 1, DEFAULT_HOTELS.length, H_HOTEL.length).setValues(DEFAULT_HOTELS);
+  return s.getDataRange().getValues().slice(1).filter(r => r[0])
+    .map(r => ({ id: String(r[0]), name: String(r[1]), lat: Number(r[2]), lng: Number(r[3]), radius: Number(r[4]) || 150, maxAcc: Number(r[5]) || 60 }));
+}
+function distM(a, b) {
+  const r = Math.PI / 180, x = (b.lng - a.lng) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
+  return Math.round(Math.sqrt(x * x + y * y) * 6371000);
+}
 function findEmp(empId) {
   const s = sheet('Employees', H_EMP), v = s.getDataRange().getValues();
   for (let i = 1; i < v.length; i++) if (String(v[i][0]).trim() === String(empId).trim()) return { s, row: i + 1, v: v[i] };
@@ -65,13 +81,13 @@ function register(d) {
   if (e && e.v[6]) throw new Error('รหัสนี้ลงทะเบียนเครื่องอื่นไว้แล้ว ให้ HR ลบช่อง credentialId ก่อน');
   if (e) {
     e.s.getRange(e.row, 7, 1, 4).setValues([[d.credId, now(), d.device || '', d.hotel || e.v[9] || '']]);
-    return { profile: wageOf(findEmp(d.empId)) };
+    return { profile: wageOf(findEmp(d.empId)), hotels: hotels() };
   }
   sheet('Employees', H_EMP).appendRow([d.empId, d.name, DEFAULT_WAGE.type, DEFAULT_WAGE.amount, DEFAULT_WAGE.start, DEFAULT_WAGE.end, d.credId, now(), d.device || '', d.hotel || '']);
-  return { profile: DEFAULT_WAGE };
+  return { profile: DEFAULT_WAGE, hotels: hotels() };
 }
 
-function profile(d) { return { profile: wageOf(auth(d)) }; }
+function profile(d) { return { profile: wageOf(auth(d)), hotels: hotels() }; }
 
 function savePhoto(dataUrl, name) {
   if (!dataUrl || dataUrl.indexOf('base64,') < 0) return '';
@@ -86,9 +102,15 @@ function clock(d) {
   const e = auth(d), ts = now(), g = d.gps || {};
   if (!g.lat) throw new Error('ไม่มีพิกัด GPS');
   if (!d.photo) throw new Error('ไม่มีรูปหลักฐาน');
+  // ตรวจพื้นที่ซ้ำที่เซิร์ฟเวอร์ (ไม่เชื่อค่าจากหน้าเว็บ)
+  const h = hotels().filter(x => x.id === d.hotelId)[0];
+  if (!h) throw new Error('ไม่พบโรงแรมที่เลือก');
+  const dist = distM({ lat: Number(g.lat), lng: Number(g.lng) }, h);
+  if (Number(g.acc) > h.maxAcc) throw new Error('สัญญาณ GPS ไม่แม่นพอ (±' + g.acc + ' ม.) ลองใหม่ใกล้หน้าต่างหรือทางเข้า');
+  if (dist > h.radius) throw new Error('อยู่นอกพื้นที่ ' + h.name + ' (ห่าง ' + dist + ' ม.) ไม่สามารถสแกนได้');
   const url = savePhoto(d.photo, d.empId + '_' + d.type + '_' + ts.replace(/[: ]/g, '-'));
-  sheet('Attendance', H_ATT).appendRow([ts, d.empId, e.v[1], d.type === 'in' ? 'เข้า' : 'ออก', g.lat, g.lng, g.acc, mapUrl(g), url, d.place || '', d.clientTime || '', 'ผ่าน', d.device || '', d.hotel || '', d.dist == null ? '' : d.dist, d.inArea === false ? 'นอกพื้นที่' : 'ในพื้นที่']);
-  return { ts };
+  sheet('Attendance', H_ATT).appendRow([ts, d.empId, e.v[1], d.type === 'in' ? 'เข้า' : 'ออก', g.lat, g.lng, g.acc, mapUrl(g), url, d.place || '', d.clientTime || '', 'ผ่าน', d.device || '', h.name, dist, 'ในพื้นที่']);
+  return { ts, dist };
 }
 
 function calcOt(start, end, brk, type, w) {
