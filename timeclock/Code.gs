@@ -14,7 +14,9 @@ const DEFAULT_HOTELS = [
   ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754400, 100.540583, 50, 30],
   ['queensland', 'Queensland Hotel Bangkok', 13.756750, 100.538559, 50, 30]
 ];
-const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
+const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม', 'สิทธิ์ (admin/staff)'];
+// ผู้ที่ลงทะเบียนด้วยชื่อนี้เป็นคนแรกจะได้สิทธิ์แอดมินอัตโนมัติ (เปลี่ยนสิทธิ์ภายหลังได้ที่คอลัมน์ "สิทธิ์" ในชีต Employees)
+const ADMIN_NAME = 'ชัชวาลย์';
 const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
 const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'บาท/ชม.', 'จำนวนเงิน (บาท)', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
 
@@ -37,16 +39,11 @@ function doGet() { return out({ ok: true, msg: 'ระบบลงเวลา�
 function setup() {
   sheet('Employees', H_EMP); sheet('Attendance', H_ATT); sheet('OT', H_OT); hotels();
   const it = DriveApp.getFoldersByName(PHOTO_FOLDER); if (!it.hasNext()) DriveApp.createFolder(PHOTO_FOLDER);
-  Logger.log('พร้อมใช้งาน · รหัสผู้ดูแลสำหรับหน้า report: ' + adminPin());
+  Logger.log('พร้อมใช้งาน');
 }
 
-// ---------- ผู้ดูแล (หน้า report) ----------
-function adminPin() {
-  const s = sheet('Admin', ['ตั้งค่า', 'ค่า']);
-  if (s.getLastRow() < 2) s.appendRow(['รหัสผู้ดูแล (PIN) สำหรับหน้า report · เปลี่ยนได้', "'" + Math.floor(100000 + Math.random() * 900000)]);
-  return String(s.getRange(2, 2).getValue()).trim();
-}
-function checkAdmin(d) { if (!d.pin || String(d.pin).trim() !== adminPin()) throw new Error('รหัสผู้ดูแลไม่ถูกต้อง'); }
+// ---------- แอดมิน: ต้องเป็นเครื่องที่ลงทะเบียน + สิทธิ์ admin ในชีต Employees ----------
+function checkAdmin(d) { const e = auth(d); if (roleOf(e) !== 'admin') throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูรายงาน'); return e; }
 
 function report(d) {
   checkAdmin(d);
@@ -58,7 +55,7 @@ function report(d) {
     .map((r, i) => ({ row: i + 2, submitted: txt(r[0]), id: String(r[1]), name: String(r[2]), date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), brk: r[6], hours: Number(r[7]) || 0, amount: Number(r[11]) || 0, reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }))
     .filter(o => o.date.slice(0, 7) === m);
   const emp = sheet('Employees', H_EMP).getDataRange().getValues().slice(1)
-    .map(r => ({ id: String(r[0]), name: String(r[1]), hotel: r[9] || '', registered: !!r[6] }));
+    .map(r => ({ id: String(r[0]), name: String(r[1]), hotel: r[9] || '', registered: !!r[6], role: r[10] || 'staff' }));
   return { att, ot, emp, rate: OT_RATE };
 }
 
@@ -103,6 +100,12 @@ function findEmp(empId) {
   for (let i = 1; i < v.length; i++) if (String(v[i][0]).trim() === String(empId).trim()) return { s, row: i + 1, v: v[i] };
   return null;
 }
+function roleOf(e) { return String(e.v[10] || '').trim().toLowerCase() === 'admin' ? 'admin' : 'staff'; }
+function roleFor(name) {
+  const v = sheet('Employees', H_EMP).getDataRange().getValues().slice(1);
+  const hasAdmin = v.some(r => String(r[10] || '').trim().toLowerCase() === 'admin');
+  return !hasAdmin && String(name).indexOf(ADMIN_NAME) >= 0 ? 'admin' : 'staff';
+}
 function wageOf(e) {
   return { type: e.v[2] === 'daily' ? 'daily' : 'monthly', amount: Number(e.v[3]) || 0, start: txt(e.v[4]) || '08:00', end: txt(e.v[5]) || '17:00' };
 }
@@ -120,13 +123,16 @@ function register(d) {
   if (e && e.v[6]) throw new Error('รหัสนี้ลงทะเบียนเครื่องอื่นไว้แล้ว ให้ HR ลบช่อง credentialId ก่อน');
   if (e) {
     e.s.getRange(e.row, 7, 1, 4).setValues([[d.credId, now(), d.device || '', d.hotel || e.v[9] || '']]);
-    return { profile: wageOf(findEmp(d.empId)), hotels: hotels() };
+    if (!e.v[10]) e.s.getRange(e.row, 11).setValue(roleFor(d.name));
+    const e2 = findEmp(d.empId);
+    return { profile: wageOf(e2), role: roleOf(e2), hotels: hotels() };
   }
-  sheet('Employees', H_EMP).appendRow([d.empId, d.name, DEFAULT_WAGE.type, DEFAULT_WAGE.amount, DEFAULT_WAGE.start, DEFAULT_WAGE.end, d.credId, now(), d.device || '', d.hotel || '']);
-  return { profile: DEFAULT_WAGE, hotels: hotels() };
+  const role = roleFor(d.name);
+  sheet('Employees', H_EMP).appendRow([d.empId, d.name, DEFAULT_WAGE.type, DEFAULT_WAGE.amount, DEFAULT_WAGE.start, DEFAULT_WAGE.end, d.credId, now(), d.device || '', d.hotel || '', role]);
+  return { profile: DEFAULT_WAGE, role, hotels: hotels() };
 }
 
-function profile(d) { return { profile: wageOf(auth(d)), hotels: hotels() }; }
+function profile(d) { const e = auth(d); return { profile: wageOf(e), role: roleOf(e), hotels: hotels() }; }
 
 function savePhoto(dataUrl, name) {
   if (!dataUrl || dataUrl.indexOf('base64,') < 0) return '';
