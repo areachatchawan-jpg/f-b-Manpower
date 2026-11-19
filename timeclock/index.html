@@ -117,7 +117,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="sub">Time Attendance &amp; Overtime</div>
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT</small>
+  <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 19 พ.ย. 10:45</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -196,7 +197,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 19 พ.ย. 10:45</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -249,7 +250,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js"></script>
+<script src="config.js?v=1045"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -575,9 +576,10 @@ $('cOut').addEventListener('click', async e=>{
 // ---------- หน้าปก ----------
 const hideCover = () => $('cover').classList.add('off');
 $('bCover').addEventListener('click', hideCover);
+$('bCoverAdm').addEventListener('click', ()=>{ hideCover(); isAdmin()?show('vRep'):openAdminLogin() });
 $('bCover').textContent = me ? 'เข้าสู่ระบบ' : 'เริ่มลงทะเบียน';
 $('coverHi').textContent = me ? `สวัสดี คุณ${me.name}` : '';
-if(me) setTimeout(hideCover, 2200);
+if(me && location.hash!=='#admin') setTimeout(hideCover, 2600);
 
 // ---------- รายงาน (แอดมิน) ----------
 let RD={att:[],ot:[],emp:[],rate:OT_RATE};
@@ -659,12 +661,14 @@ $('rCsv').addEventListener('click',()=>{
 $('fMonth').value=ymd(new Date()).slice(0,7); $('fDay').value=ymd(new Date());
 
 $('aName').value = ADMIN.name;
+function adminHash(){ if(location.hash==='#admin'){ hideCover(); isAdmin()?show('vRep'):openAdminLogin() } }
+addEventListener('hashchange', adminHash);
 // ---------- เริ่ม ----------
 applyHotelPos(store.get('tc_hotelpos',[]));
 const now=new Date(); $('oDate').value=ymd(now); $('oStart').value=wage.end||'17:00'; $('hMonth').value=ymd(now).slice(0,7);
 if(!window.isSecureContext) toast('ต้องเปิดผ่าน https เท่านั้น จึงจะใช้สแกนนิ้วและ GPS ได้',6000);
 pickHotel('rHotel','baiyoke'); pickHotel('cHotel','baiyoke'); calForm(); pickHotel('oHotel', store.get('tc_hotel', me?.hotel||'baiyoke'));
-renderMe(); show('vClock'); refreshCalc();
+renderMe(); show('vClock'); refreshCalc(); adminHash();
 if(me){ loadToday(); if(SCRIPT_URL) api('profile',{empId:me.id, credId:me.cred}).then(r=>{if(r.profile){wage={...wage,...r.profile};store.set('tc_wage',wage)} renderMe();refreshCalc(); if(r.hotels){applyHotelPos(r.hotels);calForm()}}).catch(()=>{}) }
 }
 </script>
