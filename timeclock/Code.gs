@@ -23,7 +23,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents);
     const lock = LockService.getScriptLock(); lock.waitLock(20000);
     try {
-      const fn = { register, clock, ot, list, profile }[d.action];
+      const fn = { register, clock, ot, list, profile, report, otStatus }[d.action];
       if (!fn) throw new Error('คำสั่งไม่ถูกต้อง');
       return out(Object.assign({ ok: true }, fn(d)));
     } finally { lock.releaseLock(); }
@@ -32,6 +32,45 @@ function doPost(e) {
   }
 }
 function doGet() { return out({ ok: true, msg: 'ระบบลงเวลาทำงานอยู่' }); }
+
+/** กด Run ฟังก์ชันนี้ 1 ครั้งในหน้า Apps Script เพื่ออนุญาตสิทธิ์และสร้างชีตทั้งหมด */
+function setup() {
+  sheet('Employees', H_EMP); sheet('Attendance', H_ATT); sheet('OT', H_OT); hotels();
+  const it = DriveApp.getFoldersByName(PHOTO_FOLDER); if (!it.hasNext()) DriveApp.createFolder(PHOTO_FOLDER);
+  Logger.log('พร้อมใช้งาน · รหัสผู้ดูแลสำหรับหน้า report: ' + adminPin());
+}
+
+// ---------- ผู้ดูแล (หน้า report) ----------
+function adminPin() {
+  const s = sheet('Admin', ['ตั้งค่า', 'ค่า']);
+  if (s.getLastRow() < 2) s.appendRow(['รหัสผู้ดูแล (PIN) สำหรับหน้า report · เปลี่ยนได้', "'" + Math.floor(100000 + Math.random() * 900000)]);
+  return String(s.getRange(2, 2).getValue()).trim();
+}
+function checkAdmin(d) { if (!d.pin || String(d.pin).trim() !== adminPin()) throw new Error('รหัสผู้ดูแลไม่ถูกต้อง'); }
+
+function report(d) {
+  checkAdmin(d);
+  const m = String(d.month || '').slice(0, 7);
+  const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1)
+    .map(r => ({ ts: txt(r[0]), id: String(r[1]), name: String(r[2]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9], hotel: r[13], dist: r[14] }))
+    .filter(a => a.ts.slice(0, 7) === m);
+  const ot = sheet('OT', H_OT).getDataRange().getValues().slice(1)
+    .map((r, i) => ({ row: i + 2, submitted: txt(r[0]), id: String(r[1]), name: String(r[2]), date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), brk: r[6], hours: Number(r[7]) || 0, amount: Number(r[11]) || 0, reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }))
+    .filter(o => o.date.slice(0, 7) === m);
+  const emp = sheet('Employees', H_EMP).getDataRange().getValues().slice(1)
+    .map(r => ({ id: String(r[0]), name: String(r[1]), hotel: r[9] || '', registered: !!r[6] }));
+  return { att, ot, emp, rate: OT_RATE };
+}
+
+function otStatus(d) {
+  checkAdmin(d);
+  const s = sheet('OT', H_OT), row = Number(d.row);
+  if (!(row >= 2 && row <= s.getLastRow())) throw new Error('ไม่พบรายการ OT');
+  if (['อนุมัติ', 'ไม่อนุมัติ', 'รออนุมัติ'].indexOf(d.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
+  if (String(s.getRange(row, 2).getValue()) !== String(d.id)) throw new Error('ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรช');
+  s.getRange(row, 17).setValue(d.status);
+  return {};
+}
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 // คอลัมน์วันที่/เวลา เก็บเป็นข้อความ เพื่อไม่ให้ Sheets แปลงเขตเวลาเอง
