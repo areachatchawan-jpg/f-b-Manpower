@@ -118,7 +118,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 19 พ.ย. 10:45</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 19 พ.ย. 10:50</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -197,7 +197,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 19 พ.ย. 10:45</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 19 พ.ย. 10:50</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -250,7 +250,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=1045"></script>
+<script src="config.js?v=1050"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -274,6 +274,12 @@ const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const hm = d => pad(d.getHours())+':'+pad(d.getMinutes());
 const baht = n => (Math.round(n*100)/100).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// ล้างข้อมูลทดลองทุกเครื่องอัตโนมัติ: เปลี่ยนค่านี้เมื่อต้องการรีเซ็ตข้อมูลในเครื่องของทุกคน
+const DATA_VER = 'reset-2026-11-19';
+if(store.get('tc_ver', null) !== DATA_VER){
+  ['tc_db','tc_me','tc_wage','tc_place','tc_hotel','tc_hotelpos'].forEach(k=>{try{localStorage.removeItem(k)}catch{}});
+  store.set('tc_ver', DATA_VER);
+}
 let me = store.get('tc_me', null);
 let wage = store.get('tc_wage', {type:'monthly', amount:15000, start:'08:00', end:'17:00'});
 
