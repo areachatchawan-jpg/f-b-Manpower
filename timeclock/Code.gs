@@ -20,14 +20,16 @@ const ADMIN_NAME = 'ชัชวาลย์ ต่อสุวรรณ';
 const ADMIN_SALT = 'tc-baiyoke-queensland:';
 const ADMIN_HASH = 'e8162daedddbbab76011664c0e7676be4de7135ff75784a56374eab865275732';
 const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
-const H_OT = ['ยื่นเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เริ่ม', 'สิ้นสุด', 'พัก (นาที)', 'ชั่วโมง', 'ประเภท', 'อัตรา (เท่า)', 'บาท/ชม.', 'จำนวนเงิน (บาท)', 'งาน/เหตุผล', 'รูปหลักฐาน', 'แผนที่', 'ตรวจกับเวลาสแกนออก', 'สถานะ', 'โรงแรม'];
+const H_OT = ['คำนวณเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เลิกงานปกติ (เริ่ม OT)', 'สแกนออก', 'พัก (นาที)', 'ชั่วโมง OT', 'ประเภท', 'อัตรา (เท่า)', 'บาท/ชม.', 'จำนวนเงิน (บาท)', 'งาน/เหตุผล (พนักงานกรอก)', 'รูปหลักฐาน', 'แผนที่', 'ที่มา', 'สถานะ', 'โรงแรม', 'สแกนเข้า (อ้างอิง)'];
+// ไม่มีกะตายตัว: ปัดเวลาสแกนเข้าเป็นชั่วโมงตรงที่ใกล้ที่สุด แล้วทำงานปกติ WORK_MIN นาที (รวมพัก) ส่วนที่เกินคือ OT
+const WORK_MIN = 9 * 60;
 
 function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents);
     const lock = LockService.getScriptLock(); lock.waitLock(20000);
     try {
-      const fn = { register, clock, ot, list, profile, report, otStatus, adminLogin }[d.action];
+      const fn = { register, clock, list, profile, report, otStatus, adminLogin, otNote }[d.action];
       if (!fn) throw new Error('คำสั่งไม่ถูกต้อง');
       return out(Object.assign({ ok: true }, fn(d)));
     } finally { lock.releaseLock(); }
@@ -68,7 +70,7 @@ function report(d) {
     .map(r => ({ ts: txt(r[0]), id: String(r[1]), name: String(r[2]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9], hotel: r[13], dist: r[14] }))
     .filter(a => a.ts.slice(0, 7) === m);
   const ot = sheet('OT', H_OT).getDataRange().getValues().slice(1)
-    .map((r, i) => ({ row: i + 2, submitted: txt(r[0]), id: String(r[1]), name: String(r[2]), date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), brk: r[6], hours: Number(r[7]) || 0, amount: Number(r[11]) || 0, reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }))
+    .map((r, i) => ({ row: i + 2, submitted: txt(r[0]), id: String(r[1]), name: String(r[2]), date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), brk: r[6], hours: Number(r[7]) || 0, amount: Number(r[11]) || 0, reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17], inTs: txt(r[18]) }))
     .filter(o => o.date.slice(0, 7) === m);
   const emp = sheet('Employees', H_EMP).getDataRange().getValues().slice(1)
     .map(r => ({ id: String(r[0]), name: String(r[1]), hotel: r[9] || '', registered: !!r[6] }));
@@ -87,7 +89,7 @@ function otStatus(d) {
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 // คอลัมน์วันที่/เวลา เก็บเป็นข้อความ เพื่อไม่ให้ Sheets แปลงเขตเวลาเอง
-const TEXT_COLS = { Employees: ['A', 'E', 'F', 'H'], Attendance: ['A', 'B', 'K'], OT: ['A', 'B', 'D', 'E', 'F'] };
+const TEXT_COLS = { Employees: ['A', 'E', 'F', 'H'], Attendance: ['A', 'B', 'K'], OT: ['A', 'B', 'D', 'E', 'F', 'S'] };
 function sheet(name, headers) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let s = ss.getSheetByName(name);
@@ -161,31 +163,46 @@ function clock(d) {
   if (Number(g.acc) > h.maxAcc) throw new Error('สัญญาณ GPS ไม่แม่นพอ (±' + g.acc + ' ม.) ลองใหม่ใกล้หน้าต่างหรือทางเข้า');
   if (dist > h.radius) throw new Error('อยู่นอกพื้นที่ ' + h.name + ' (ห่าง ' + dist + ' ม.) ไม่สามารถสแกนได้');
   const url = savePhoto(d.photo, d.empId + '_' + d.type + '_' + ts.replace(/[: ]/g, '-'));
+  const out = { ts, dist };
+  if (d.type === 'out') out.ot = autoOt(d.empId, e.v[1], ts, h.name);
   sheet('Attendance', H_ATT).appendRow([ts, d.empId, e.v[1], d.type === 'in' ? 'เข้า' : 'ออก', g.lat, g.lng, g.acc, mapUrl(g), url, d.place || '', d.clientTime || '', 'ผ่าน', d.device || '', h.name, dist, 'ในพื้นที่']);
-  return { ts, dist };
+  return out;
 }
 
-function calcOt(start, end, brk, type, w) {
-  const toM = t => { const p = String(t).split(':'); return Number(p[0]) * 60 + Number(p[1]); };
-  let mins = toM(end) - toM(start); if (mins <= 0) mins += 1440;
-  mins = Math.max(0, mins - (Number(brk) || 0));
-  const hours = Math.round(mins / 60 * 100) / 100;
-  return { hours, rate: 1, hourly: OT_RATE, amount: Math.round(hours * OT_RATE * 100) / 100 };
+const parseTs = t => new Date(String(t).replace(' ', 'T') + '+07:00');
+const hm = dt => Utilities.formatDate(dt, TZ, 'HH:mm');
+
+/** คำนวณ OT อัตโนมัติเมื่อสแกนออก: จับคู่กับการสแกนเข้าล่าสุดภายใน 24 ชม. */
+function autoOt(empId, name, outTs, hotel) {
+  const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1), outT = parseTs(outTs);
+  let inTs = null;
+  for (let i = att.length - 1; i >= 0; i--) {
+    const r = att[i]; if (String(r[1]) !== String(empId) || r[3] !== 'เข้า') continue;
+    const t = parseTs(txt(r[0])); if (t < outT && outT - t <= 864e5) { inTs = txt(r[0]); break; }
+  }
+  if (!inTs) return { noIn: true };
+  const start = new Date(Math.round(parseTs(inTs).getTime() / 36e5) * 36e5), normalEnd = new Date(start.getTime() + WORK_MIN * 6e4);
+  const worked = Math.round((outT - parseTs(inTs)) / 6e4), otMin = Math.max(0, Math.floor((outT - normalEnd) / 6e4));
+  const res = { inTs, start: hm(start), normalEnd: hm(normalEnd), worked, otMin, hours: Math.round(otMin / 60 * 100) / 100, amount: Math.round(otMin * OT_RATE / 60 * 100) / 100 };
+  const s = sheet('OT', H_OT), v = s.getDataRange().getValues();
+  let row = -1; for (let i = 1; i < v.length; i++) if (String(v[i][1]) === String(empId) && txt(v[i][18]) === inTs) { row = i + 1; break; }
+  if (otMin <= 0) { if (row > 0 && v[row - 1][16] === 'รออนุมัติ') s.getRange(row, 8, 1, 5).setValues([[0, 'OT อัตโนมัติ', 1, OT_RATE, 0]]); return res; }
+  const src = 'สแกนเข้า ' + inTs.slice(11, 16) + ' (นับเริ่ม ' + res.start + ') → ออก ' + outTs.slice(11, 16) + ' · เลิกงานปกติ ' + res.normalEnd;
+  const vals = [now(), String(empId), name, inTs.slice(0, 10), res.normalEnd, outTs.slice(11, 16), 0, res.hours, 'OT อัตโนมัติ', 1, OT_RATE, res.amount,
+    row > 0 ? v[row - 1][12] : '', '', '', src, 'รออนุมัติ', hotel, inTs];
+  if (row > 0) s.getRange(row, 1, 1, vals.length).setValues([vals]); else s.appendRow(vals);
+  return res;
 }
 
-function ot(d) {
-  const e = auth(d);
-  if (!d.date || !d.start || !d.end) throw new Error('กรอกวันที่และเวลาให้ครบ');
-  const c = calcOt(d.start, d.end, d.brk, d.type, wageOf(e));
-  // เทียบกับเวลาสแกนออกจริงของวันนั้น
-  const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1);
-  const outs = att.filter(r => String(r[1]) === String(d.empId) && r[3] === 'ออก' && txt(r[0]).slice(0, 10) === d.date).map(r => txt(r[0]).slice(11, 16));
-  const overnight = d.end <= d.start;
-  const check = overnight ? 'OT ข้ามคืน ตรวจด้วยตนเอง' : outs.some(t => t >= d.end) ? 'ตรงกับเวลาสแกนออก' : 'ไม่พบสแกนออกที่ครอบคลุม';
-  const label = 'OT';
-  const url = savePhoto(d.photo, d.empId + '_OT_' + d.date);
-  sheet('OT', H_OT).appendRow([now(), d.empId, e.v[1], d.date, d.start, d.end, d.brk || 0, c.hours, label, c.rate, c.hourly, c.amount, d.reason || '', url, mapUrl(d.gps), check, 'รออนุมัติ', d.hotel || '']);
-  return Object.assign({ check }, c);
+/** พนักงานใส่เหตุผล/งานที่ทำ ให้ OT ที่ยังรออนุมัติ */
+function otNote(d) {
+  auth(d);
+  const s = sheet('OT', H_OT), v = s.getDataRange().getValues();
+  for (let i = 1; i < v.length; i++) if (String(v[i][1]) === String(d.empId) && txt(v[i][18]) === String(d.key)) {
+    if (v[i][16] !== 'รออนุมัติ') throw new Error('รายการนี้แอดมินพิจารณาแล้ว แก้ไม่ได้');
+    s.getRange(i + 1, 13).setValue("'" + String(d.reason || '').slice(0, 300)); return {};
+  }
+  throw new Error('ไม่พบรายการ OT');
 }
 
 function list(d) {
@@ -193,8 +210,8 @@ function list(d) {
   const id = String(d.empId);
   const att = sheet('Attendance', H_ATT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-120)
     .map(r => ({ ts: txt(r[0]), type: r[3] === 'เข้า' ? 'in' : 'out', lat: r[4], lng: r[5], acc: r[6], photo: r[8], place: r[9], hotel: r[13], dist: r[14], inArea: r[15] }));
-  const typ = { 'OT': 'ot' };
+  const typ = { 'OT': 'ot', 'OT อัตโนมัติ': 'ot' };
   const ot = sheet('OT', H_OT).getDataRange().getValues().slice(1).filter(r => String(r[1]) === id).slice(-60)
-    .map(r => ({ date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), hours: r[7], type: typ[r[8]], rate: r[9], amount: r[11], reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17] }));
+    .map(r => ({ date: txt(r[3]).slice(0, 10), start: txt(r[4]).slice(-5), end: txt(r[5]).slice(-5), hours: r[7], type: typ[r[8]], rate: r[9], amount: r[11], reason: r[12], photo: r[13], check: r[15], status: r[16], hotel: r[17], inTs: txt(r[18]) }));
   return { att, ot };
 }
