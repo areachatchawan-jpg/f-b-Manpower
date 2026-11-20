@@ -11,8 +11,8 @@ const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' 
 // พิกัดเริ่มต้นของจุดสแกน (ชีต Hotels จะถูกสร้างจากค่านี้ แล้ว HR แก้ในชีตได้เลย)
 const H_HOTEL = ['id', 'ชื่อโรงแรม', 'lat', 'lng', 'รัศมี (ม.)', 'GPS แม่นยำอย่างน้อย (±ม.)'];
 const DEFAULT_HOTELS = [
-  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754400, 100.540583, 50, 30],
-  ['queensland', 'Queensland Hotel Bangkok', 13.756750, 100.538559, 50, 30]
+  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754400, 100.540583, 50, 65],
+  ['queensland', 'Queensland Hotel Bangkok', 13.756750, 100.538559, 50, 65]
 ];
 const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
 // แอดมิน: เก็บเฉพาะ hash ของรหัสผ่านเริ่มต้น เปลี่ยนรหัสได้ที่ชีต Admin (ช่อง B2)
@@ -105,7 +105,7 @@ function hotels() {
   const s = sheet('Hotels', H_HOTEL);
   if (s.getLastRow() < 2) s.getRange(2, 1, DEFAULT_HOTELS.length, H_HOTEL.length).setValues(DEFAULT_HOTELS);
   return s.getDataRange().getValues().slice(1).filter(r => r[0])
-    .map(r => ({ id: String(r[0]), name: String(r[1]), lat: Number(r[2]), lng: Number(r[3]), radius: Number(r[4]) || 50, maxAcc: Number(r[5]) || 30 }));
+    .map(r => ({ id: String(r[0]), name: String(r[1]), lat: Number(r[2]), lng: Number(r[3]), radius: Number(r[4]) || 50, maxAcc: Number(r[5]) || 65 }));
 }
 function distM(a, b) {
   const r = Math.PI / 180, x = (b.lng - a.lng) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
