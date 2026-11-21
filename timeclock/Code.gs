@@ -54,18 +54,27 @@ function setup() {
 function adminSheet() {
   const s = sheet('Admin', ['ตั้งค่า', 'ค่า']);
   if (s.getLastRow() < 2) { s.appendRow(['ชื่อแอดมิน', ADMIN_NAME]); s.appendRow(['รหัสผ่านใหม่ (เว้นว่าง = ใช้รหัสเริ่มต้น)', '']); }
+  if (s.getLastRow() < 5) s.getRange(5, 1, 1, 3).setValues([['แอดมินเพิ่มเติม (ชื่อ)', 'รหัสผ่าน', 'ตำแหน่ง']]).setFontWeight('bold');
   return s;
 }
 function hex(bytes) { return bytes.map(b => ((b + 256) % 256).toString(16).padStart(2, '0')).join(''); }
 function checkAdmin(d) {
   const cache = CacheService.getScriptCache(), fails = Number(cache.get('admin_fail') || 0);
   if (fails >= 5) throw new Error('ใส่รหัสผิดหลายครั้ง ระบบล็อก 15 นาที');
-  const custom = String(adminSheet().getRange(3, 2).getDisplayValue()).trim(), pass = String(d.adminPass || '');
-  const ok = custom ? pass === custom : hex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, ADMIN_SALT + pass, Utilities.Charset.UTF_8)) === ADMIN_HASH;
-  if (!ok) { cache.put('admin_fail', String(fails + 1), 900); throw new Error('รหัสผ่านแอดมินไม่ถูกต้อง'); }
+  const s = adminSheet(), pass = String(d.adminPass || '');
+  const custom = String(s.getRange(3, 2).getDisplayValue()).trim();
+  let name = '';
+  if (pass && (custom ? pass === custom : hex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, ADMIN_SALT + pass, Utilities.Charset.UTF_8)) === ADMIN_HASH)) name = ADMIN_NAME;
+  // แอดมินเพิ่มเติม: แถว 6 ลงไป คอลัมน์ A = ชื่อ, B = รหัสผ่าน (ลบแถว = ยกเลิกสิทธิ์)
+  if (!name && pass && s.getLastRow() >= 6) {
+    const rows = s.getRange(6, 1, s.getLastRow() - 5, 2).getDisplayValues();
+    for (const r of rows) if (r[0].trim() && r[1].trim() && r[1].trim() === pass) { name = r[0].trim(); break; }
+  }
+  if (!name) { cache.put('admin_fail', String(fails + 1), 900); throw new Error('รหัสผ่านแอดมินไม่ถูกต้อง'); }
   cache.remove('admin_fail');
+  return name;
 }
-function adminLogin(d) { checkAdmin(d); return { name: ADMIN_NAME }; }
+function adminLogin(d) { return { name: checkAdmin(d) }; }
 
 function report(d) {
   checkAdmin(d);
@@ -82,12 +91,14 @@ function report(d) {
 }
 
 function otStatus(d) {
-  checkAdmin(d);
+  const who = checkAdmin(d);
   const s = sheet('OT', H_OT), row = Number(d.row);
   if (!(row >= 2 && row <= s.getLastRow())) throw new Error('ไม่พบรายการ OT');
   if (['อนุมัติ', 'ไม่อนุมัติ', 'รออนุมัติ'].indexOf(d.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
   if (String(s.getRange(row, 2).getValue()) !== String(d.id)) throw new Error('ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรช');
   s.getRange(row, 17).setValue(d.status);
+  if (!s.getRange(1, 20).getValue()) s.getRange(1, 20).setValue('ผู้อนุมัติ');
+  s.getRange(row, 20).setValue(d.status === 'รออนุมัติ' ? '' : who + ' · ' + now());
   return {};
 }
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }

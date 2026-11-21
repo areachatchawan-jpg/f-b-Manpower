@@ -122,7 +122,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 15:00 (ระบบจริง)</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 15:10 (ระบบจริง)</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -185,7 +185,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 15:00 (ระบบจริง)</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 15:10 (ระบบจริง)</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -234,15 +234,14 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 <div class="modal" id="aMod"><div class="sheet">
   <h2>เข้าสู่ระบบแอดมิน</h2>
   <form id="aForm">
-    <label for="aName">ผู้ดูแลระบบ</label><input id="aName" readonly>
     <label for="aPass">รหัสผ่าน</label><input id="aPass" type="password" autocomplete="current-password">
     <p></p><div class="row"><button type="button" id="aCancel">ยกเลิก</button><button class="pri" id="aGo">เข้าสู่ระบบ</button></div>
   </form>
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=2215"></script>
-<script src="xlsx-lite.js?v=2215"></script>
+<script src="config.js?v=2216"></script>
+<script src="xlsx-lite.js?v=2216"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -417,6 +416,7 @@ tick(); setInterval(tick,1000);
 
 // ---------- นำทาง ----------
 let adminPass = (()=>{try{return sessionStorage.getItem('tc_admin')}catch{return null}})();
+let adminName = (()=>{try{return sessionStorage.getItem('tc_admin_name')}catch{return null}})() || ADMIN.name;
 const isAdmin = () => !!adminPass;
 function show(v){
   if(v==='vRep' && !isAdmin()){ openAdminLogin(); return }
@@ -433,7 +433,7 @@ $('nav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) 
 function renderMe(){
   $('who').textContent = (me ? `${me.name} · ${me.id}` : 'ยังไม่ได้ลงทะเบียน') + (isAdmin()?' · แอดมิน':'');
   $('navRep').hidden = !isAdmin(); $('calCard').hidden = !isAdmin();
-  $('admState').textContent = isAdmin() ? `เข้าสู่ระบบแอดมินแล้ว (${ADMIN.name})` : 'สำหรับผู้ดูแลระบบ: ดูรายงานพนักงานทุกคน อนุมัติ OT และวัดพิกัดจุดสแกน';
+  $('admState').textContent = isAdmin() ? `เข้าสู่ระบบแอดมินแล้ว (${adminName})` : 'สำหรับผู้ดูแลระบบ: ดูรายงานพนักงานทุกคน อนุมัติ OT และวัดพิกัดจุดสแกน';
   $('bAdm').textContent = isAdmin() ? 'ออกจากระบบแอดมิน' : 'เข้าสู่ระบบแอดมิน';
   $('devInfo').textContent = me ? `ผูกกับ ${me.name} (${me.id}) ตั้งแต่ ${me.since}` : '';
 
@@ -660,15 +660,15 @@ let RD={att:[],ot:[],emp:[],rate:OT_RATE};
 const short = h => String(h||'').includes('Queensland') ? 'Queensland' : String(h||'').includes('Baiyoke') ? 'Baiyoke Sky' : (h||'-');
 function openReport(){ loadReport() }
 function openAdminLogin(){ $('aPass').value=''; $('aMod').classList.add('on'); setTimeout(()=>$('aPass').focus(),80) }
-function adminLogout(reason){ adminPass=null; try{sessionStorage.removeItem('tc_admin')}catch{}
+function adminLogout(reason){ adminPass=null; try{sessionStorage.removeItem('tc_admin');sessionStorage.removeItem('tc_admin_name')}catch{}
   if(location.hash==='#admin') history.replaceState(null,'',location.pathname+location.search);
   renderMe(); show(me?'vClock':'vReg'); toast(reason||'ออกจากระบบแอดมินแล้ว');
   if(reason) openAdminLogin(); }
 $('aForm').addEventListener('submit', async e=>{
   e.preventDefault(); const pass=$('aPass').value; if(!pass) return;
   $('aGo').disabled=true;
-  try{ await api('adminLogin',{adminPass:pass}); adminPass=pass; try{sessionStorage.setItem('tc_admin',pass)}catch{}
-    $('aMod').classList.remove('on'); hideCover(); renderMe(); show('vRep'); toast('ยินดีต้อนรับ คุณ'+ADMIN.name) }
+  try{ const r=await api('adminLogin',{adminPass:pass}); adminPass=pass; adminName=r.name||ADMIN.name; try{sessionStorage.setItem('tc_admin',pass);sessionStorage.setItem('tc_admin_name',adminName)}catch{}
+    $('aMod').classList.remove('on'); hideCover(); renderMe(); show('vRep'); toast('ยินดีต้อนรับ คุณ'+adminName) }
   catch(err){ toast(err.message); $('aPass').select() }
   $('aGo').disabled=false;
 });
@@ -731,7 +731,7 @@ $('rCsv').addEventListener('click', async()=>{
   try{
     const {att,ot}=rFiltered(), m=$('fMonth').value, logo=await XLSX_LITE.loadLogo('logo-queensland.png',170);
     const hotel=$('fHotel').value||'Baiyoke Sky Hotel Bangkok และ Queensland Hotel Bangkok';
-    const sub=`${hotel} · เดือน ${monthTh(m)} · ออกรายงานโดย ${ADMIN.name} · ${new Date().toLocaleString('th-TH')}`;
+    const sub=`${hotel} · เดือน ${monthTh(m)} · ออกรายงานโดย ${adminName} · ${new Date().toLocaleString('th-TH')}`;
     const emp={}; const E=x=>emp[x.id]??={id:x.id,name:x.name,hotel:x.hotel,days:new Set(),noOut:0,ah:0,aa:0,ph:0,pa:0};
     att.forEach(a=>{const e=E(a);if(a.type==='in')e.days.add(a.ts.slice(0,10))});
     ot.forEach(o=>{const e=E(o);if(o.status==='อนุมัติ'){e.ah+=+o.hours||0;e.aa+=+o.amount||0}else if(o.status!=='ไม่อนุมัติ'){e.ph+=+o.hours||0;e.pa+=+o.amount||0}});
@@ -757,7 +757,6 @@ $('rCsv').addEventListener('click', async()=>{
 });
 $('fMonth').value=ymd(new Date()).slice(0,7); $('fDay').value=ymd(new Date());
 
-$('aName').value = ADMIN.name;
 function adminHash(){ if(location.hash==='#admin'){ hideCover(); isAdmin()?show('vRep'):openAdminLogin() } }
 addEventListener('hashchange', adminHash);
 // ---------- เริ่ม ----------
