@@ -1,3 +1,2 @@
-// วาง Web app URL ของ Google Apps Script (ลงท้ายด้วย /exec) ไว้ระหว่าง '' แล้วอัปโหลดขึ้นใหม่
-// เว้นว่างไว้ = โหมดทดลอง (ข้อมูลเก็บในมือถือแต่ละเครื่อง)
-window.TC_SCRIPT_URL = '';
+// Web app URL ของ Google Apps Script (ระบบจริง — ข้อมูลรวมใน Google Sheet)
+window.TC_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJWegZqHYd9nUEbiCvAbpasb2VpaoaKiYxgwGNUAhQLL2zXmcOz3QhymGoq7zZjXnXkg/exec';
