@@ -31,12 +31,12 @@ const WORK_MIN = 9 * 60; // OT นับเฉพาะชั่วโมงเ�
 function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents);
+    const fn = { register, clock, list, profile, report, otStatus, adminLogin, otNote }[d.action];
+    if (!fn) throw new Error('คำสั่งไม่ถูกต้อง');
+    // ล็อกเฉพาะคำสั่งที่เขียนข้อมูล คำสั่งอ่านทำงานพร้อมกันได้ ไม่ต้องรอคิว
+    if (['list', 'profile', 'report', 'adminLogin'].indexOf(d.action) >= 0) return out(Object.assign({ ok: true }, fn(d)));
     const lock = LockService.getScriptLock(); lock.waitLock(20000);
-    try {
-      const fn = { register, clock, list, profile, report, otStatus, adminLogin, otNote }[d.action];
-      if (!fn) throw new Error('คำสั่งไม่ถูกต้อง');
-      return out(Object.assign({ ok: true }, fn(d)));
-    } finally { lock.releaseLock(); }
+    try { return out(Object.assign({ ok: true }, fn(d))); } finally { lock.releaseLock(); }
   } catch (err) {
     return out({ ok: false, error: String(err.message || err) });
   }
@@ -118,7 +118,13 @@ function sheet(name, headers) {
 const now = () => Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
 const txt = v => v instanceof Date ? Utilities.formatDate(v, TZ, v.getFullYear() < 1900 ? 'HH:mm' : 'yyyy-MM-dd HH:mm:ss') : String(v == null ? '' : v);
 
+// จำพิกัดโรงแรมไว้ 5 นาที (แก้ชีต Hotels แล้วมีผลภายใน 5 นาที)
 function hotels() {
+  const c = CacheService.getScriptCache(), hit = c.get('hotels');
+  if (hit) return JSON.parse(hit);
+  const v = loadHotels(); c.put('hotels', JSON.stringify(v), 300); return v;
+}
+function loadHotels() {
   const s = sheet('Hotels', H_HOTEL);
   if (s.getLastRow() < 2) s.getRange(2, 1, DEFAULT_HOTELS.length, H_HOTEL.length).setValues(DEFAULT_HOTELS);
   const by = {};
@@ -165,8 +171,9 @@ function profile(d) { return { profile: wageOf(auth(d)), hotels: hotels() }; }
 
 function savePhoto(dataUrl, name) {
   if (!dataUrl || dataUrl.indexOf('base64,') < 0) return '';
-  const it = DriveApp.getFoldersByName(PHOTO_FOLDER);
-  const folder = it.hasNext() ? it.next() : DriveApp.createFolder(PHOTO_FOLDER);
+  const c = CacheService.getScriptCache(); let folder = null;
+  try { const id = c.get('photo_folder'); if (id) folder = DriveApp.getFolderById(id); } catch (e) { folder = null; }
+  if (!folder) { const it = DriveApp.getFoldersByName(PHOTO_FOLDER); folder = it.hasNext() ? it.next() : DriveApp.createFolder(PHOTO_FOLDER); c.put('photo_folder', folder.getId(), 21600); }
   const blob = Utilities.newBlob(Utilities.base64Decode(dataUrl.split('base64,')[1]), 'image/jpeg', name + '.jpg');
   return folder.createFile(blob).getUrl();
 }

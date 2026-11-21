@@ -122,7 +122,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 15:10 (ระบบจริง)</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 15:40 (ระบบจริง)</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -185,7 +185,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 15:10 (ระบบจริง)</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 15:40 (ระบบจริง)</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -240,8 +240,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=2216"></script>
-<script src="xlsx-lite.js?v=2216"></script>
+<script src="config.js?v=2217"></script>
+<script src="xlsx-lite.js?v=2217"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -343,23 +343,29 @@ async function verifyFinger(){
 
 // ---------- GPS ----------
 // เก็บค่า GPS ต่อเนื่องแล้วเลือกค่าที่แม่นที่สุด (หยุดเร็วถ้าแม่นพอ)
-const getGps = (ms=12000, good=15, onTick) => new Promise((res,rej)=>{
+// enough(best) = ค่านี้ผ่านเงื่อนไขแล้ว → หยุดได้ทันทีหลังเก็บค่าอย่างน้อย ~2 วินาที (ไม่ต้องรอครบเวลา)
+const getGps = (ms=12000, good=15, onTick, enough) => new Promise((res,rej)=>{
   if(!navigator.geolocation) return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));
-  let best=null, all=[], done=false;
-  const fin = () => { if(done) return; done=true; navigator.geolocation.clearWatch(w); clearTimeout(t);
+  let best=null, all=[], done=false; const t0=Date.now();
+  const fin = () => { if(done) return; done=true; navigator.geolocation.clearWatch(w); clearTimeout(t); clearInterval(iv);
     best ? res({...best, samples:all}) : rej(new Error('หาตำแหน่งไม่ได้ ลองขยับไปใกล้หน้าต่างหรือทางเข้า')) };
+  const check = () => { if(!best) return;
+    if((best.acc<=good && all.length>=2) || (good>0 && best.acc<=8)) return fin();
+    if(enough && enough(best) && Date.now()-t0>=2000) fin(); };
   const w = navigator.geolocation.watchPosition(p=>{
     const g={lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), acc:Math.round(p.coords.accuracy)};
-    all.push(g); if(!best||g.acc<best.acc) best=g; onTick&&onTick(best);
-    if((best.acc<=good && all.length>=2) || (good>0 && best.acc<=8)) fin();
-  }, e=>{ if(e.code===1){done=true;navigator.geolocation.clearWatch(w);clearTimeout(t);rej(new Error('กรุณาอนุญาตการเข้าถึงตำแหน่ง'))} }, {enableHighAccuracy:true, maximumAge:0, timeout:ms});
-  const t = setTimeout(fin, ms);
+    all.push(g); if(!best||g.acc<best.acc) best=g; onTick&&onTick(best); check();
+  }, e=>{ if(e.code===1){done=true;navigator.geolocation.clearWatch(w);clearTimeout(t);clearInterval(iv);rej(new Error('กรุณาอนุญาตการเข้าถึงตำแหน่ง'))} }, {enableHighAccuracy:true, maximumAge:0, timeout:ms});
+  const t = setTimeout(fin, ms), iv = setInterval(check, 400);
 });
+// อยู่ในพื้นที่โรงแรมใดโรงแรมหนึ่ง และสัญญาณแม่นพอแล้ว
+const gpsPasses = g => HOTELS.some(h => hDist(g,h)<=h.radius && g.acc<=h.maxAcc);
+const geoGranted = async () => { try{ return (await navigator.permissions.query({name:'geolocation'})).state==='granted' }catch{ return false } };
 
 // ---------- รูป: ย่อขนาด + ประทับเวลา/พิกัดลงบนรูป ----------
 // วาดรูป (กลับซ้าย-ขวาให้ตรงกับภาพที่เห็นตอนถ่ายได้) แล้วประทับข้อความแบบอ่านปกติ
 function stampSource(src, sx, sy, sw, sh, lines, mirror){
-  const k = Math.min(1, 900/Math.max(sw,sh));
+  const k = Math.min(1, 720/Math.max(sw,sh));
   const cv = document.createElement('canvas'); cv.width=Math.round(sw*k); cv.height=Math.round(sh*k);
   const g = cv.getContext('2d');
   if(mirror){ g.translate(cv.width,0); g.scale(-1,1) }
@@ -369,7 +375,7 @@ function stampSource(src, sx, sy, sw, sh, lines, mirror){
   g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(0,cv.height-h,cv.width,h);
   g.fillStyle='#fff'; g.font=`600 ${fs}px "IBM Plex Sans Thai",sans-serif`;
   lines.forEach((t,i)=>g.fillText(t, fs*.6, cv.height-h+fs*1.4*(i+1)));
-  return cv.toDataURL('image/jpeg',.72);
+  return cv.toDataURL('image/jpeg',.7);
 }
 function stampPhoto(file, lines, mirror=false){
   return new Promise((res,rej)=>{
@@ -465,9 +471,13 @@ async function startClock(type){
   [1,2,3].forEach(i=>setSt(i,'รอ','wait')); $('mPhoto').value=''; $('mPrev').style.display='none'; $('bRetake').hidden=true; $('cam').hidden=true; $('camFb').hidden=true; $('mPlace').value=store.get('tc_place',''); $('mDist').textContent='';
   pickHotel('mHotel', store.get('tc_hotel', me.hotel||'baiyoke'));
   $('mGo').disabled=true; $('mod').classList.add('on');
+  const me0=pend, tick=b=>{ if(pend===me0 && pend.ok) setSt(2,`±${b.acc} ม.…`,'wait') };
+  // เคยอนุญาตตำแหน่งแล้ว → เริ่มหา GPS พร้อมกับสแกนนิ้วเลย (เร็วขึ้น)
+  let gpsP = (await geoGranted()) ? getGps(12000,15,tick,gpsPasses) : null;
+  if(gpsP) gpsP.catch(()=>{});
   try{ setSt(1,'กำลังสแกน…','wait'); await verifyFinger(); pend.ok=true; setSt(1,'ผ่าน','ok'); startCam() }
   catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
-  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(12000,15,b=>setSt(2,`±${b.acc} ม.…`,'wait'));
+  try{ setSt(2,'กำลังหา…','wait'); pend.gps = await (gpsP || getGps(12000,15,tick,gpsPasses));
     const near = HOTELS.map(h=>({h,d:hDist(pend.gps,h)})).sort((a,b)=>a.d-b.d)[0];
     pickHotel('mHotel', near.h.id); showDist() }
   catch(e){ setSt(2,'ไม่ได้','bad'); toast(e.message); return }
@@ -485,7 +495,7 @@ function showDist(){
 }
 $('mDist').addEventListener('click', async e=>{
   if(e.target.id!=='mRetry'||!pend) return; e.target.disabled=true; e.target.textContent='กำลังหาตำแหน่ง…';
-  try{ pend.gps = await getGps(15000,10,b=>setSt(2,`±${b.acc} ม.…`,'wait')); showDist() }catch(err){ toast(err.message); e.target.disabled=false; e.target.textContent='หาตำแหน่งใหม่' }
+  try{ pend.gps = await getGps(15000,10,b=>setSt(2,`±${b.acc} ม.…`,'wait'),gpsPasses); showDist() }catch(err){ toast(err.message); e.target.disabled=false; e.target.textContent='หาตำแหน่งใหม่' }
 });
 document.querySelector('[data-name=mHotel]').addEventListener('change',showDist);
 function ready(){$('mGo').disabled = !(pend && pend.ok && pend.gps && pend.inArea && pend.photo)}
