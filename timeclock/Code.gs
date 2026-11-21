@@ -12,7 +12,7 @@ const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' 
 const H_HOTEL = ['id', 'ชื่อโรงแรม', 'lat', 'lng', 'รัศมี (ม.)', 'GPS แม่นยำอย่างน้อย (±ม.)'];
 const DEFAULT_HOTELS = [
   ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754545, 100.540312, 50, 65],
-  ['queensland', 'Queensland Hotel Bangkok', 13.756750, 100.538559, 50, 65]
+  ['queensland', 'Queensland Hotel Bangkok', 13.756757, 100.53827, 50, 65]
 ];
 const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
 // แอดมิน: เก็บเฉพาะ hash ของรหัสผ่านเริ่มต้น เปลี่ยนรหัสได้ที่ชีต Admin (ช่อง B2)
