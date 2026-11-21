@@ -22,7 +22,7 @@ const ADMIN_HASH = 'e8162daedddbbab76011664c0e7676be4de7135ff75784a56374eab86527
 const H_ATT = ['เวลาเซิร์ฟเวอร์', 'รหัส', 'ชื่อ', 'เข้า/ออก', 'lat', 'lng', 'ความแม่นยำ (ม.)', 'แผนที่', 'รูปหลักฐาน', 'สถานที่/หมายเหตุ', 'เวลาเครื่อง', 'ยืนยันลายนิ้วมือ', 'อุปกรณ์', 'โรงแรม', 'ระยะห่างจากโรงแรม (ม.)', 'พื้นที่'];
 const H_OT = ['คำนวณเมื่อ', 'รหัส', 'ชื่อ', 'วันที่ทำ', 'เลิกงานปกติ (เริ่ม OT)', 'สแกนออก', 'พัก (นาที)', 'ชั่วโมง OT', 'ประเภท', 'อัตรา (เท่า)', 'บาท/ชม.', 'จำนวนเงิน (บาท)', 'งาน/เหตุผล (พนักงานกรอก)', 'รูปหลักฐาน', 'แผนที่', 'ที่มา', 'สถานะ', 'โรงแรม', 'สแกนเข้า (อ้างอิง)'];
 // ไม่มีกะตายตัว: ปัดเวลาสแกนเข้าเป็นชั่วโมงตรงที่ใกล้ที่สุด แล้วทำงานปกติ WORK_MIN นาที (รวมพัก) ส่วนที่เกินคือ OT
-const WORK_MIN = 9 * 60;
+const WORK_MIN = 9 * 60; // OT นับเฉพาะชั่วโมงเต็ม (เศษนาทีไม่นับ)
 
 function doPost(e) {
   try {
@@ -183,10 +183,10 @@ function autoOt(empId, name, outTs, hotel) {
   if (!inTs) return { noIn: true };
   const start = new Date(Math.round(parseTs(inTs).getTime() / 36e5) * 36e5), normalEnd = new Date(start.getTime() + WORK_MIN * 6e4);
   const worked = Math.round((outT - parseTs(inTs)) / 6e4), otMin = Math.max(0, Math.floor((outT - normalEnd) / 6e4));
-  const res = { inTs, start: hm(start), normalEnd: hm(normalEnd), worked, otMin, hours: Math.round(otMin / 60 * 100) / 100, amount: Math.round(otMin * OT_RATE / 60 * 100) / 100 };
+  const res = { inTs, start: hm(start), normalEnd: hm(normalEnd), worked, otMin, hours: Math.floor(otMin / 60), amount: Math.floor(otMin / 60) * OT_RATE }; // นับเฉพาะชั่วโมงเต็ม ไม่คิดเศษ
   const s = sheet('OT', H_OT), v = s.getDataRange().getValues();
   let row = -1; for (let i = 1; i < v.length; i++) if (String(v[i][1]) === String(empId) && txt(v[i][18]) === inTs) { row = i + 1; break; }
-  if (otMin <= 0) { if (row > 0 && v[row - 1][16] === 'รออนุมัติ') s.getRange(row, 8, 1, 5).setValues([[0, 'OT อัตโนมัติ', 1, OT_RATE, 0]]); return res; }
+  if (res.hours < 1) { if (row > 0 && v[row - 1][16] === 'รออนุมัติ') s.getRange(row, 8, 1, 5).setValues([[0, 'OT อัตโนมัติ', 1, OT_RATE, 0]]); return res; }
   const src = 'สแกนเข้า ' + inTs.slice(11, 16) + ' (นับเริ่ม ' + res.start + ') → ออก ' + outTs.slice(11, 16) + ' · เลิกงานปกติ ' + res.normalEnd;
   const vals = [now(), String(empId), name, inTs.slice(0, 10), res.normalEnd, outTs.slice(11, 16), 0, res.hours, 'OT อัตโนมัติ', 1, OT_RATE, res.amount,
     row > 0 ? v[row - 1][12] : '', '', '', src, 'รออนุมัติ', hotel, inTs];

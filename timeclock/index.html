@@ -118,7 +118,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 20 พ.ย. 14:20</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 07:15</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -151,7 +151,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <section class="view" id="vOt">
     <div class="card">
       <h2>OT ของฉัน</h2>
-      <p class="note">ระบบคิด OT ให้อัตโนมัติจากเวลาสแกนจริง: เวลาเริ่มงานเป็น<b>ชั่วโมงตรง</b>เท่านั้น ระบบปัดเวลาสแกนเข้าเป็นชั่วโมงที่ใกล้ที่สุด (สแกน 06:50 หรือ 07:20 → เริ่ม 07:00 · สแกน 07:40 → เริ่ม 08:00) แล้วทำงานปกติ <b>9 ชม.</b> (รวมพัก 1 ชม.) เช่น เริ่ม 07:00 เลิก 16:00 ถ้าสแกนออกเกินเวลานี้ ส่วนที่เกินคือ OT ชั่วโมงละ 60 บาท และ<b>ต้องให้แอดมินอนุมัติ</b>ก่อน</p>
+      <p class="note">ระบบคิด OT ให้อัตโนมัติจากเวลาสแกนจริง: เวลาเริ่มงานเป็น<b>ชั่วโมงตรง</b>เท่านั้น ระบบปัดเวลาสแกนเข้าเป็นชั่วโมงที่ใกล้ที่สุด (สแกน 06:50 หรือ 07:20 → เริ่ม 07:00 · สแกน 07:40 → เริ่ม 08:00) แล้วทำงานปกติ <b>9 ชม.</b> (รวมพัก 1 ชม.) เช่น เริ่ม 07:00 เลิก 16:00 ถ้าสแกนออกเกินเวลานี้ ส่วนที่เกินคือ OT <b>นับเฉพาะชั่วโมงเต็ม ไม่คิดเศษ</b> ชั่วโมงละ 60 บาท (เกิน 1 ชม. 50 นาที = 1 ชม. = 60 บาท) และ<b>ต้องให้แอดมินอนุมัติ</b>ก่อน</p>
       <div id="otNow"></div>
     </div>
     <div class="card"><h2>รายการ OT เดือนนี้</h2><div id="otList"><p class="note">กำลังโหลด…</p></div></div>
@@ -170,7 +170,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <section class="view" id="vSet">
     <div class="card">
       <h2>เวลาทำงาน</h2>
-      <p class="note">ไม่มีกะตายตัว เวลาเริ่มงานเป็นชั่วโมงตรง โดยปัดเวลาสแกนเข้าเป็นชั่วโมงที่ใกล้ที่สุด แล้วทำงานปกติ 9 ชม. (รวมพัก 1 ชม.) ส่วนที่เกินคือ OT ชั่วโมงละ 60 บาท คิดตามนาทีจริง และต้องรอแอดมินอนุมัติ</p>
+      <p class="note">ไม่มีกะตายตัว เวลาเริ่มงานเป็นชั่วโมงตรง โดยปัดเวลาสแกนเข้าเป็นชั่วโมงที่ใกล้ที่สุด แล้วทำงานปกติ 9 ชม. (รวมพัก 1 ชม.) ส่วนที่เกินคือ OT นับเฉพาะชั่วโมงเต็ม (ไม่คิดเศษนาที) ชั่วโมงละ 60 บาท และต้องรอแอดมินอนุมัติ</p>
     </div>
     <div class="card"><h2>แอดมิน</h2><p class="note" id="admState"></p><button id="bAdm" style="width:100%"></button></div>
     <div class="card" id="calCard" hidden>
@@ -181,7 +181,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 20 พ.ย. 14:20</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 07:15</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -234,8 +234,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=2120"></script>
-<script src="xlsx-lite.js?v=2120"></script>
+<script src="config.js?v=2107"></script>
+<script src="xlsx-lite.js?v=2107"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -259,7 +259,7 @@ const normalEndOf = inTs => new Date(startOf(inTs).getTime()+WORK_MIN*6e4);
 function autoOt(inTs, outTs){
   const i=parseTs(inTs), o=parseTs(outTs), normalEnd=normalEndOf(inTs);
   const worked=Math.round((o-i)/6e4), otMin=Math.max(0,Math.floor((o-normalEnd)/6e4));
-  return {inTs, start:fmtHM(startOf(inTs)), normalEnd:fmtHM(normalEnd), worked, otMin, hours:Math.round(otMin/60*100)/100, amount:Math.round(otMin*OT_RATE/60*100)/100};
+  return {inTs, start:fmtHM(startOf(inTs)), normalEnd:fmtHM(normalEnd), worked, otMin, hours:Math.floor(otMin/60), amount:Math.floor(otMin/60)*OT_RATE}; // OT นับเฉพาะชั่วโมงเต็ม ไม่คิดเศษ
 }
 // แอดมิน: เก็บเฉพาะค่า hash ของรหัสผ่าน (ไม่มีรหัสจริงอยู่ในโค้ด)
 const ADMIN = {name:'ชัชวาลย์ ต่อสุวรรณ', salt:'tc-baiyoke-queensland:', hash:'e8162daedddbbab76011664c0e7676be4de7135ff75784a56374eab865275732'};
@@ -378,7 +378,7 @@ async function api(action, data){
     if(data.type==='out'){ const si=shiftIn(db.att, ts);
       if(si){ ot=autoOt(si.ts, ts);
         const k=db.ot.findIndex(o=>o.inTs===si.ts);
-        if(ot.otMin>0){ const rec={inTs:si.ts, date:si.ts.slice(0,10), start:ot.normalEnd, end:ts.slice(11,16), brk:0, hours:ot.hours, amount:ot.amount, hotel:data.hotel,
+        if(ot.hours>0){ const rec={inTs:si.ts, date:si.ts.slice(0,10), start:ot.normalEnd, end:ts.slice(11,16), brk:0, hours:ot.hours, amount:ot.amount, hotel:data.hotel,
             reason:k>=0?db.ot[k].reason:'', check:`สแกนเข้า ${si.ts.slice(11,16)} (นับเริ่ม ${ot.start}) → ออก ${ts.slice(11,16)} · เลิกงานปกติ ${ot.normalEnd}`, status:'รออนุมัติ'};
           k>=0 ? db.ot[k]=rec : db.ot.push(rec); }
       } else ot={noIn:true};
@@ -486,7 +486,8 @@ $('mGo').addEventListener('click', async()=>{
     let msg=`บันทึก${pend.type==='in'?'เข้า':'ออก'}งานแล้ว ${(r.ts||'').slice(11,16)}`;
     if(pend.type==='in') msg+=` · นับเริ่มงาน ${fmtHM(startOf(r.ts))} · เลิกงานปกติ ${fmtHM(normalEndOf(r.ts))}`;
     else if(r.ot&&r.ot.noIn) msg+=' · ไม่พบการสแกนเข้า จึงคิด OT ไม่ได้';
-    else if(r.ot&&r.ot.otMin>0) msg+=` · ทำงาน ${dur(r.ot.worked)} · OT ${dur(r.ot.otMin)} (฿${baht(r.ot.amount)}) รอแอดมินอนุมัติ`;
+    else if(r.ot&&r.ot.hours>0) msg+=` · ทำงาน ${dur(r.ot.worked)} · OT ${r.ot.hours} ชม. (฿${baht(r.ot.amount)}) รอแอดมินอนุมัติ${r.ot.otMin%60?` · เศษ ${r.ot.otMin%60} นาทีไม่นับ`:''}`;
+    else if(r.ot&&r.ot.otMin>0) msg+=` · ทำงาน ${dur(r.ot.worked)} · เกินเวลา ${r.ot.otMin} นาที ยังไม่ครบ 1 ชม. ไม่นับ OT`;
     else if(r.ot) msg+=` · ทำงาน ${dur(r.ot.worked)} · ไม่มี OT`;
     toast(msg,6000); pend=null; loadToday();
   }catch(e){toast(e.message)}
@@ -506,7 +507,7 @@ function renderOtNow(){
   if(!sh){ $('otNow').innerHTML='<p class="note">ยังไม่ได้สแกนเข้างาน หรือสแกนออกไปแล้ว</p>'; return }
   const end=normalEndOf(sh.ts), now=Date.now(), over=Math.floor((now-end)/6e4);
   $('otNow').innerHTML=`<div class="calc"><div><div class="note">สแกนเข้า ${sh.ts.slice(11,16)} · นับเริ่ม ${fmtHM(startOf(sh.ts))} · เลิกงานปกติ</div><b>${fmtHM(end)}</b></div><div style="text-align:right">${
-    over>0?`<div class="note">OT สะสมตอนนี้ (ชม.:นาที)</div><b>${hhmm(over)}</b><div class="note">≈ ฿${baht(over*OT_RATE/60)} · คิดจริงตอนสแกนออก</div>`
+    over>0?`<div class="note">OT นับแล้ว (ชั่วโมงเต็ม)</div><b>${Math.floor(over/60)} ชม.</b><div class="note">≈ ฿${baht(Math.floor(over/60)*OT_RATE)} · อีก ${60-over%60} นาทีครบชั่วโมงถัดไป</div>`
           :`<div class="note">อีก (ชม.:นาที)</div><b>${hhmm(-over)}</b><div class="note">ถึงเวลาเลิกงาน</div>`}</div></div>`;
 }
 async function loadOtView(){
@@ -654,7 +655,7 @@ function renderReport(){
   $('kHrs').textContent=baht(sum(appr,'hours')).replace('.00',''); $('kHrsSub').textContent=`รออนุมัติ ${sum(pend,'hours')} ชม.`;
   $('kAmt').textContent=baht(sum(appr,'amount')).replace('.00',''); $('kAmtSub').textContent=`รออนุมัติ ${baht(sum(pend,'amount'))} บาท`;
   $('nPend').textContent=pend.length?`(${pend.length})`:'';
-  $('pDay').innerHTML = rows.length?`<div class="card scroll"><table class="stack"><thead><tr><th>พนักงาน</th><th>โรงแรม</th><th>เข้า</th><th>นับเริ่ม</th><th>เลิกงานปกติ</th><th>ออก</th><th class="n">ชั่วโมงงาน</th><th class="n">OT</th><th>หลักฐาน</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.name)}</b><br><span class="note">${esc(r.id)}</span></td><td>${esc(short(r.hotel))}</td><td class="t">${r.fi?r.fi.ts.slice(11,16):'<span class="pill bad">ไม่ได้สแกนเข้า</span>'}</td><td class="t">${r.fi?fmtHM(startOf(r.fi.ts)):'-'}</td><td class="t">${r.fi?fmtHM(normalEndOf(r.fi.ts)):'-'}</td><td class="t">${r.lo?r.lo.ts.slice(11,16):'<span class="pill wait">ยังไม่ออก</span>'}</td><td class="n">${r.hrs===''?'-':r.hrs}</td><td class="n">${r.fi&&r.lo&&r.lo.ts>r.fi.ts?(x=>x.otMin?dur(x.otMin):'-')(autoOt(r.fi.ts,r.lo.ts)):'-'}</td><td>${[mapA(r.fi,'จุดเข้า'),r.fi&&photoA(r.fi.photo),mapA(r.lo,'จุดออก'),r.lo&&photoA(r.lo.photo)].filter(Boolean).join(' · ')||'-'}</td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty">ไม่มีการสแกนในวันที่ ${esc(day)}</div>`;
+  $('pDay').innerHTML = rows.length?`<div class="card scroll"><table class="stack"><thead><tr><th>พนักงาน</th><th>โรงแรม</th><th>เข้า</th><th>นับเริ่ม</th><th>เลิกงานปกติ</th><th>ออก</th><th class="n">ชั่วโมงงาน</th><th class="n">OT</th><th>หลักฐาน</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.name)}</b><br><span class="note">${esc(r.id)}</span></td><td>${esc(short(r.hotel))}</td><td class="t">${r.fi?r.fi.ts.slice(11,16):'<span class="pill bad">ไม่ได้สแกนเข้า</span>'}</td><td class="t">${r.fi?fmtHM(startOf(r.fi.ts)):'-'}</td><td class="t">${r.fi?fmtHM(normalEndOf(r.fi.ts)):'-'}</td><td class="t">${r.lo?r.lo.ts.slice(11,16):'<span class="pill wait">ยังไม่ออก</span>'}</td><td class="n">${r.hrs===''?'-':r.hrs}</td><td class="n">${r.fi&&r.lo&&r.lo.ts>r.fi.ts?(x=>x.hours?x.hours+' ชม.':'-')(autoOt(r.fi.ts,r.lo.ts)):'-'}</td><td>${[mapA(r.fi,'จุดเข้า'),r.fi&&photoA(r.fi.photo),mapA(r.lo,'จุดออก'),r.lo&&photoA(r.lo.photo)].filter(Boolean).join(' · ')||'-'}</td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty">ไม่มีการสแกนในวันที่ ${esc(day)}</div>`;
   const emp={}; const E=(x)=>emp[x.id]??={id:x.id,name:x.name,hotel:x.hotel,days:new Set(),noOut:0,ah:0,aa:0,ph:0,pa:0};
   att.forEach(a=>{const e=E(a);if(a.type==='in')e.days.add(a.ts.slice(0,10))});
   ot.forEach(o=>{const e=E(o);if(o.status==='อนุมัติ'){e.ah+=+o.hours||0;e.aa+=+o.amount||0}else if(o.status!=='ไม่อนุมัติ'){e.ph+=+o.hours||0;e.pa+=+o.amount||0}});
