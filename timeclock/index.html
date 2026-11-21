@@ -122,7 +122,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
   <div class="hi" id="coverHi"></div>
   <button id="bCover">เข้าสู่ระบบ</button>
   <button id="bCoverAdm" style="background:none;color:#7b7062;border:1px solid #b0a89c;margin-top:10px">แอดมิน · ดูรายงาน</button>
-  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 09:30</small>
+  <small>สแกนลายนิ้วมือ · ตรวจพิกัดโรงแรม · บันทึก OT<br>เวอร์ชัน 21 พ.ย. 09:45</small>
 </section>
 <header class="brand"><img src="logo-baiyoke.png" alt="Baiyoke Sky Hotel Bangkok"><i></i><img src="logo-queensland.png" alt="Queensland Hotel Bangkok"></header>
 <main>
@@ -185,7 +185,7 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
       <p></p><button class="pri" id="bCal">เริ่มวัดพิกัด</button>
       <div id="cOut" class="note" style="margin-top:10px"></div>
     </div>
-    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 09:30</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
+    <div class="card"><h2>อุปกรณ์นี้</h2><p class="note">เวอร์ชัน 21 พ.ย. 09:45</p><p class="note" id="devInfo"></p><button id="bReset">ยกเลิกการลงทะเบียนในเครื่องนี้</button></div>
   </section>
 
   <!-- รายงาน (แอดมินเท่านั้น) -->
@@ -241,8 +241,8 @@ nav button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--go
 </div></div>
 <div id="toast"></div>
 
-<script src="config.js?v=2193"></script>
-<script src="xlsx-lite.js?v=2193"></script>
+<script src="config.js?v=2194"></script>
+<script src="xlsx-lite.js?v=2194"></script>
 <script>
 {
 // URL ของ Google Apps Script ตั้งที่ไฟล์ config.js (เว้นว่าง = โหมดทดลอง เก็บในเครื่อง)
@@ -275,8 +275,11 @@ const sha256 = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256
 // จุดสแกนของแต่ละโรงแรม: ค่าเริ่มต้นจากเว็บ ให้ HR วัดจริงที่หน้างานด้วยเมนู ตั้งค่า > วัดพิกัดจุดสแกน
 // เมื่อเชื่อม Google Sheets แล้ว ค่าจะมาจากชีต Hotels แทน (แก้ได้โดยไม่ต้องแก้โค้ด)
 const HOTELS = [
-  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', lat:13.754545, lng:100.540312, radius:50, maxAcc:65},
-  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', lat:13.756757, lng:100.53827, radius:50, maxAcc:65}
+  // แต่ละโรงแรมมีได้หลายจุดสแกน (pts) อยู่ใกล้จุดไหนในรัศมีก็สแกนผ่าน
+  {id:'baiyoke', name:'Baiyoke Sky Hotel Bangkok', th:'โรงแรมใบหยก สกาย', logo:'logo-baiyoke.png', radius:50, maxAcc:65,
+   pts:[{lat:13.7544, lng:100.540583, note:'กลางทาวเวอร์'}, {lat:13.75469, lng:100.54004, note:'วัดจริง 21 พ.ย.'}]},
+  {id:'queensland', name:'Queensland Hotel Bangkok', th:'โรงแรมควีนส์แลนด์', logo:'logo-queensland.png', radius:50, maxAcc:65,
+   pts:[{lat:13.75675, lng:100.538559, note:'หน้าตึก'}, {lat:13.756764, lng:100.53798, note:'วัดจริง 21 พ.ย.'}, {lat:13.757218, lng:100.537377, note:'โซนจัดเลี้ยง วัดจริง 21 พ.ย.'}]}
 ];
 const $ = id => document.getElementById(id);
 const store = {get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
@@ -296,7 +299,14 @@ if(store.get('tc_ver', null) !== DATA_VER){
 let me = store.get('tc_me', null);
 let wage = store.get('tc_wage', {type:'monthly', amount:15000, start:'08:00', end:'17:00'});
 
-const applyHotelPos = list => (list||[]).forEach(p=>{const h=HOTELS.find(x=>x.id===p.id); if(h) ['lat','lng','radius','maxAcc'].forEach(k=>{if(p[k]!==''&&p[k]!=null&&!isNaN(+p[k])) h[k]=+p[k]})});
+HOTELS.forEach(h=>{h.lat=h.pts[0].lat; h.lng=h.pts[0].lng});
+// ข้อมูลจากชีต Hotels (pts = ทุกจุด) แทนค่าในโค้ด · จุดที่วัดแล้วกด "ใช้ในเครื่องนี้" (lat,lng) = เพิ่มจุด
+const applyHotelPos = list => (list||[]).forEach(p=>{const h=HOTELS.find(x=>x.id===p.id); if(!h) return;
+  ['radius','maxAcc'].forEach(k=>{if(p[k]!==''&&p[k]!=null&&!isNaN(+p[k])) h[k]=+p[k]});
+  if(Array.isArray(p.pts)&&p.pts.length) h.pts=p.pts.map(x=>({lat:+x.lat,lng:+x.lng,note:x.note||''}));
+  else if(p.lat&&p.lng&&!h.pts.some(x=>distM(x,p)<5)) h.pts=[...h.pts,{lat:+p.lat,lng:+p.lng,note:'วัดในเครื่องนี้'}];
+  h.lat=h.pts[0].lat; h.lng=h.pts[0].lng });
+const hDist = (g,h) => Math.min(...h.pts.map(p=>distM(g,p)));
 const hotelOf = id => HOTELS.find(h=>h.id===id) || HOTELS[0];
 function distM(a,b){const r=Math.PI/180,x=(b.lng-a.lng)*r*Math.cos((a.lat+b.lat)/2*r),y=(b.lat-a.lat)*r;return Math.round(Math.hypot(x,y)*6371000)}
 document.querySelectorAll('.hotels').forEach(box=>{
@@ -458,13 +468,13 @@ async function startClock(type){
   try{ setSt(1,'กำลังสแกน…','wait'); await verifyFinger(); pend.ok=true; setSt(1,'ผ่าน','ok'); startCam() }
   catch(e){ setSt(1,'ไม่ผ่าน','bad'); toast(e.name==='SecurityError'?'ต้องเปิดผ่านลิงก์ https เท่านั้น':e.name==='NotAllowedError'?'ยกเลิกหรือสแกนไม่ผ่าน':e.message); return }
   try{ setSt(2,'กำลังหา…','wait'); pend.gps = await getGps(12000,15,b=>setSt(2,`±${b.acc} ม.…`,'wait'));
-    const near = HOTELS.map(h=>({h,d:distM(pend.gps,h)})).sort((a,b)=>a.d-b.d)[0];
+    const near = HOTELS.map(h=>({h,d:hDist(pend.gps,h)})).sort((a,b)=>a.d-b.d)[0];
     pickHotel('mHotel', near.h.id); showDist() }
   catch(e){ setSt(2,'ไม่ได้','bad'); toast(e.message); return }
   if(!pend.photo) setSt(3, camStream?'กดปุ่มวงกลมเพื่อถ่าย':'แตะช่องด้านล่าง','wait'); ready();
 }
 function showDist(){
-  if(!pend||!pend.gps) return; const h=hotelOf(getHotel('mHotel')), g=pend.gps, d=distM(g,h);
+  if(!pend||!pend.gps) return; const h=hotelOf(getHotel('mHotel')), g=pend.gps, d=hDist(g,h);
   const accOk = g.acc<=h.maxAcc, inOk = d<=h.radius; pend.inArea = accOk && inOk;
   setSt(2, `±${g.acc} ม.`, accOk?'ok':'bad');
   $('mDist').className='dist '+(pend.inArea?'ok':'bad');
@@ -495,7 +505,7 @@ async function startCam(){
 function stopCam(){ if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null } $('camV').srcObject=null }
 function photoLines(){
   const d=new Date(), g=pend.gps||{}, h=hotelOf(getHotel('mHotel'));
-  return [h.name+(g.lat?` · ห่าง ${distM(g,h)} ม.`:''), `${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`];
+  return [h.name+(g.lat?` · ห่าง ${hDist(g,h)} ม.`:''), `${me.name} · ${pend.type==='in'?'เข้างาน':'ออกงาน'}`, `${ymd(d)} ${hm(d)}:${pad(d.getSeconds())}`, `GPS ${g.lat??'-'}, ${g.lng??'-'} (±${g.acc??'-'} ม.)`];
 }
 function showShot(){ $('mPrev').src=pend.photo; $('mPrev').style.display='block'; $('bRetake').hidden=false; setSt(3,'พร้อม','ok'); ready() }
 $('bShot').addEventListener('click',()=>{
@@ -516,7 +526,7 @@ $('mCancel').addEventListener('click',()=>{$('mod').classList.remove('on'); pend
 $('mGo').addEventListener('click', async()=>{
   $('mGo').disabled=true; $('mGo').textContent='กำลังบันทึก…';
   try{
-    const place=$('mPlace').value.trim(), h=hotelOf(getHotel('mHotel')), dist=distM(pend.gps,h);
+    const place=$('mPlace').value.trim(), h=hotelOf(getHotel('mHotel')), dist=hDist(pend.gps,h);
     if(dist>h.radius||pend.gps.acc>h.maxAcc) throw new Error('อยู่นอกพื้นที่ ไม่สามารถสแกนได้');
     store.set('tc_place',place); store.set('tc_hotel',h.id);
     const r = await api('clock',{empId:me.id, credId:me.cred, type:pend.type, gps:pend.gps, place, hotel:h.name, hotelId:h.id, dist, inArea:true, photo:pend.photo, clientTime:new Date().toISOString(), device:navigator.userAgent});
@@ -614,7 +624,7 @@ $('bReset').addEventListener('click',()=>{ if($('bReset').dataset.c){ localStora
 // ---------- วัดพิกัด ----------
 let cal=null;
 function calForm(){const h=hotelOf(getHotel('cHotel'));$('cRad').value=h.radius;$('cAcc').value=h.maxAcc;
-  $('cOut').innerHTML=`ค่าปัจจุบัน: <b>${h.lat}, ${h.lng}</b> · รัศมี ${h.radius} ม. · <a href="https://maps.google.com/?q=${h.lat},${h.lng}" target="_blank" rel="noopener">ดูบนแผนที่</a>`}
+  $('cOut').innerHTML=`จุดสแกนปัจจุบัน ${h.pts.length} จุด (รัศมีจุดละ ${h.radius} ม.)<br>`+h.pts.map((p,i)=>`${i+1}. <b>${p.lat}, ${p.lng}</b> ${esc(p.note||'')} · <a href="https://maps.google.com/?q=${p.lat},${p.lng}" target="_blank" rel="noopener">แผนที่</a>`).join('<br>')}
 document.querySelector('[data-name=cHotel]').addEventListener('change',calForm);
 $('bCal').addEventListener('click', async()=>{
   const b=$('bCal'); b.disabled=true;
@@ -626,7 +636,7 @@ $('bCal').addEventListener('click', async()=>{
     cal={id:h.id, lat, lng, radius:+$('cRad').value||50, maxAcc:+$('cAcc').value||65};
     $('cOut').innerHTML=`<b>${h.th}</b><br>พิกัด: <b>${lat}, ${lng}</b><br>ความแม่นยำ ±${g.acc} ม. จาก ${g.samples.length} ค่า · <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener">ตรวจบนแผนที่</a>
       <div class="row" style="margin-top:10px"><button id="cCopy" type="button">คัดลอก</button><button id="cUse" type="button">ใช้ในเครื่องนี้</button></div>
-      <p class="note">ส่งตัวเลขนี้ให้ผู้ดูแลระบบ หรือใส่ในชีต Hotels (คอลัมน์ lat, lng) เพื่อให้มีผลกับพนักงานทุกคน</p>`;
+      <p class="note">ส่งตัวเลขนี้ให้ผู้ดูแลระบบ หรือเพิ่มเป็นแถวใหม่ในชีต Hotels (id เดียวกับโรงแรม) เพื่อเพิ่มจุดสแกนให้พนักงานทุกคน</p>`;
     if(g.acc>30) toast('สัญญาณยังไม่แม่น (±'+g.acc+' ม.) ลองวัดใหม่ใกล้หน้าต่างหรือประตู',5000);
   }catch(e){toast(e.message)}
   b.disabled=false; b.textContent='เริ่มวัดพิกัด';

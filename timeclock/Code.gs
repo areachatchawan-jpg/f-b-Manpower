@@ -8,11 +8,15 @@ const PHOTO_FOLDER = 'หลักฐานลงเวลา';
 const OT_RATE = 60; // ค่า OT บาทต่อชั่วโมง อัตราเดียวทุกคน
 const DEFAULT_WAGE = { type: 'monthly', amount: 0, start: '08:00', end: '17:00' };
 
-// พิกัดเริ่มต้นของจุดสแกน (ชีต Hotels จะถูกสร้างจากค่านี้ แล้ว HR แก้ในชีตได้เลย)
-const H_HOTEL = ['id', 'ชื่อโรงแรม', 'lat', 'lng', 'รัศมี (ม.)', 'GPS แม่นยำอย่างน้อย (±ม.)'];
+// จุดสแกนเริ่มต้น (ชีต Hotels จะถูกสร้างจากค่านี้) · 1 แถว = 1 จุดสแกน ใส่ id ซ้ำได้ = โรงแรมนั้นมีหลายจุด
+// อยู่ใกล้จุดไหนในรัศมีก็สแกนผ่าน · เพิ่มจุดใหม่ = เพิ่มแถว (ใช้รัศมี/ความแม่นยำจากแถวแรกของโรงแรมนั้น)
+const H_HOTEL = ['id', 'ชื่อโรงแรม', 'lat', 'lng', 'รัศมี (ม.)', 'GPS แม่นยำอย่างน้อย (±ม.)', 'จุด / หมายเหตุ'];
 const DEFAULT_HOTELS = [
-  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.754545, 100.540312, 50, 65],
-  ['queensland', 'Queensland Hotel Bangkok', 13.756757, 100.53827, 50, 65]
+  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.7544, 100.540583, 50, 65, 'กลางทาวเวอร์'],
+  ['baiyoke', 'Baiyoke Sky Hotel Bangkok', 13.75469, 100.54004, 50, 65, 'วัดจริง 21 พ.ย.'],
+  ['queensland', 'Queensland Hotel Bangkok', 13.75675, 100.538559, 50, 65, 'หน้าตึก'],
+  ['queensland', 'Queensland Hotel Bangkok', 13.756764, 100.53798, 50, 65, 'วัดจริง 21 พ.ย.'],
+  ['queensland', 'Queensland Hotel Bangkok', 13.757218, 100.537377, 50, 65, 'โซนจัดเลี้ยง วัดจริง 21 พ.ย.']
 ];
 const H_EMP = ['รหัส', 'ชื่อ', 'ประเภทค่าจ้าง (monthly/daily)', 'ค่าจ้าง', 'เข้างาน', 'เลิกงาน', 'credentialId', 'ลงทะเบียนเมื่อ', 'อุปกรณ์', 'สังกัดโรงแรม'];
 // แอดมิน: เก็บเฉพาะ hash ของรหัสผ่านเริ่มต้น เปลี่ยนรหัสได้ที่ชีต Admin (ช่อง B2)
@@ -106,8 +110,13 @@ const txt = v => v instanceof Date ? Utilities.formatDate(v, TZ, v.getFullYear()
 function hotels() {
   const s = sheet('Hotels', H_HOTEL);
   if (s.getLastRow() < 2) s.getRange(2, 1, DEFAULT_HOTELS.length, H_HOTEL.length).setValues(DEFAULT_HOTELS);
-  return s.getDataRange().getValues().slice(1).filter(r => r[0])
-    .map(r => ({ id: String(r[0]), name: String(r[1]), lat: Number(r[2]), lng: Number(r[3]), radius: Number(r[4]) || 50, maxAcc: Number(r[5]) || 65 }));
+  const by = {};
+  s.getDataRange().getValues().slice(1).filter(r => r[0] && r[2] !== '' && r[3] !== '').forEach(r => {
+    const id = String(r[0]).trim();
+    if (!by[id]) by[id] = { id, name: String(r[1]), radius: Number(r[4]) || 50, maxAcc: Number(r[5]) || 65, pts: [] };
+    by[id].pts.push({ lat: Number(r[2]), lng: Number(r[3]), note: String(r[6] || '') });
+  });
+  return Object.keys(by).map(k => Object.assign(by[k], { lat: by[k].pts[0].lat, lng: by[k].pts[0].lng }));
 }
 function distM(a, b) {
   const r = Math.PI / 180, x = (b.lng - a.lng) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
@@ -159,7 +168,7 @@ function clock(d) {
   // ตรวจพื้นที่ซ้ำที่เซิร์ฟเวอร์ (ไม่เชื่อค่าจากหน้าเว็บ)
   const h = hotels().filter(x => x.id === d.hotelId)[0];
   if (!h) throw new Error('ไม่พบโรงแรมที่เลือก');
-  const dist = distM({ lat: Number(g.lat), lng: Number(g.lng) }, h);
+  const dist = Math.min.apply(null, h.pts.map(p => distM({ lat: Number(g.lat), lng: Number(g.lng) }, p)));
   if (Number(g.acc) > h.maxAcc) throw new Error('สัญญาณ GPS ไม่แม่นพอ (±' + g.acc + ' ม.) ลองใหม่ใกล้หน้าต่างหรือทางเข้า');
   if (dist > h.radius) throw new Error('อยู่นอกพื้นที่ ' + h.name + ' (ห่าง ' + dist + ' ม.) ไม่สามารถสแกนได้');
   const url = savePhoto(d.photo, d.empId + '_' + d.type + '_' + ts.replace(/[: ]/g, '-'));
